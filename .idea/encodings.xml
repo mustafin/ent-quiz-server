@@ -2,13 +2,9 @@
 <project version="4">
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/app/views/category" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/views/hello.jsp" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/views/index.jsp" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/app/views/pages" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/views/questions" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/app/views/templates/main.scala.html" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/bootstrap" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/public/css" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/font-awesome" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/images/avatar.png" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/images/avatar04.png" charset="UTF-8" />
@@ -35,7 +31,6 @@
     <file url="file://$PROJECT_DIR$/public/javascripts/app.min.js" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/javascripts/demo.js" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/javascripts/pages" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/public/js" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/plugins" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/stylesheets/AdminLTE.css" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/public/stylesheets/AdminLTE.min.css" charset="UTF-8" />

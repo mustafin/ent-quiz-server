@@ -14,8 +14,8 @@
           <value>
             <ProjectSettingsEntry>
               <option name="version" value="2.3.8" />
-              <option name="sourceDir" value="C:\workspace\QuizScala\conf" />
-              <option name="confDir" value="C:\workspace\QuizScala\app" />
+              <option name="sourceDir" value="C:\workspace\QuizScala\app" />
+              <option name="confDir" value="C:\workspace\QuizScala\conf" />
               <option name="templateImports">
                 <list>
                   <option value="play.api.templates.PlayMagic._" />
