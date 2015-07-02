@@ -1,0 +1,78 @@
+
+
+@*<t:main>*@
+
+  @*<spring:message code="label.question" var="question"/>*@
+  @*<spring:message code="label.answer" var="answer"/>*@
+  @*<spring:message code="label.isTrue" var="isTrue"/>*@
+  @*<section class="content">*@
+    @*<div class="box">*@
+      @*<div class="box-header with-border"><h1><spring:message code="label.questions"/></h1></div>*@
+
+      @*<div class="box-body">*@
+
+        @*<c:url var="addUrl" value="/category/${categoryId}/questions/add"/>*@
+
+        @*<form:form modelAttribute="questionAttribute" action="${addUrl}" method="post" role="form">*@
+
+          @*<div class="form-group">*@
+            @*<form:input path="title" type="text" class="form-control" placeholder="${question}"/>*@
+          @*</div>*@
+
+          @*<div class="form-group">*@
+
+            @*<table class="table">*@
+              @*<thead>*@
+                @*<tr>*@
+                  @*<th>${answer}</th>*@
+                  @*<th>${isTrue}</th>*@
+                @*</tr>*@
+              @*</thead>*@
+              @*<tbody>*@
+                @*<tr>*@
+                  @*<td><form:input path="answers[0].title" type="text" class="form-control" placeholder="${answer}"/></td>*@
+                  @*<td><form:checkbox path="answers[0].isTrue"/></td>*@
+                @*</tr>*@
+                @*<tr>*@
+                  @*<td><form:input path="answers[1].title" type="text" class="form-control" placeholder="${answer}"/></td>*@
+                  @*<td><form:checkbox path="answers[1].isTrue"/></td>*@
+                @*</tr>*@
+              @*</tbody>*@
+            @*</table>*@
+
+
+            @*<div class="form-group">*@
+              @*<button type="submit" class="btn btn-primary"><spring:message code="label.add"/></button>*@
+            @*</div>*@
+
+          @*</div>*@
+        @*</form:form>*@
+
+        @*<table class="table table-bordered">*@
+          @*<tbody>*@
+          @*<tr>*@
+            @*<th>#</th>*@
+            @*<th><spring:message code="label.subject"/></th>*@
+            @*<th style="width: 10%"><spring:message code="label.options"/></th>*@
+          @*</tr>*@
+
+          @*<c:forEach items="${questions}" var="question">*@
+            @*<tr>*@
+              @*<td>${question.id}</td>*@
+              @*<td>${question.title}</td>*@
+              @*<td>*@
+                @*<div class="btn-group pull-right">*@
+                  @*<a href="<c:url value="/question/${categoryId}/edit/${question.id}"/>" class="btn btn-info"><i class="fa fa-edit"></i></a>*@
+                  @*<a href="<c:url value="/question/${categoryId}/delete/${question.id}"/>" class="btn btn-danger"><i class="fa fa-close"></i></a>*@
+                @*</div>*@
+              @*</td>*@
+            @*</tr>*@
+          @*</c:forEach>*@
+
+          @*</tbody>*@
+        @*</table>*@
+      @*</div>*@
+    @*</div>*@
+  @*</section>*@
+
+@*</t:main>*@
