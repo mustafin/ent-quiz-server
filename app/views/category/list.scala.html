@@ -1,4 +1,6 @@
-@(form: Form[Category])
+@(catForm: Form[Category], categories: List[Category])
+
+@import helper._
 
 @templates.main("title"){
 
@@ -8,14 +10,15 @@
 
       <div class="box-body">
 
-        <form action="@routes.CategoryController.add("")" method="post" role="form">
-          <div class="form-group">
-            <input type="text" class="form-control" placeholder="subject"/>
-          </div>
-          <div class="form-group">
-            <button type="submit" class="btn btn-primary">label.add</button>
-          </div>
-        </form>
+        @form(action=routes.CategoryController.add(), 'method -> "post", 'method -> "asf"){
+            <div class="form-group">
+              @inputText(catForm("name"), 'class -> "form-control", 'placeholder -> Messages("label.subject"))
+            </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">label.add</button>
+            </div>
+
+        }
 
         <table class="table table-bordered">
           <tbody>
@@ -25,17 +28,20 @@
               <th>label.options</th>
             </tr>
 
-            @*<c:forEach items="${categories}" var="category">*@
+            @categories.map{category =>
               <tr>
-                <td>${category.id}</td>
-                <td>${category.name}</td>
+                <td>@category.id</td>
+                <td>@category.name</td>
                 <td>
                   <div class="btn-group pull-right">
-                    <a href="/category/edit/1" class="btn btn-info"><i class="fa fa-edit"></i></a>
-                    <a href="/category/delete/1" class="btn btn-danger"><i class="fa fa-close"></i></a>
+                    <a href="@routes.CategoryController.edit(category.id)" class="btn btn-info"><i class="fa fa-edit"></i></a>
+                    <a href="@routes.CategoryController.delete(category.id)" class="btn btn-danger"><i class="fa fa-close"></i></a>
                   </div>
                 </td>
               </tr>
+            }
+            @*<c:forEach items="${categories}" var="category">*@
+
             @*</c:forEach>*@
 
           </tbody>

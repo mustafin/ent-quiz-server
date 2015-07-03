@@ -1,6 +1,6 @@
 package controllers
 
-import models.{DB, User}
+import models.User
 import play.api.data.Forms._
 import play.api.data._
 import play.api.mvc._
@@ -13,16 +13,17 @@ object Auth extends Controller{
 
   val loginForm = Form(
     mapping(
+      "id"       -> ignored[Option[Int]](None),
       "username" -> text,
       "password" -> text
-    )(User.apply) (User.unapply) verifying ("Invalid username or password", result => result match{
-      case User(username, password) => check(username, password)
-    })
-  )
+    )(User.apply) (User.unapply)
+      verifying ("Invalid username or password", result => result match {
+        case User(id, username, password) => check(username, password)
+      })
+    )
 
   def check(username: String, password: String) = {
-    val user = DB.query[User].whereEqual("username", username).fetchOne()
-    user.exists(_.password == password)
+    username == "admin" && password == "1234"
   }
 
   def login = Action { implicit request =>

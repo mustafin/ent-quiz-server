@@ -14,9 +14,14 @@
           <value>
             <ProjectSettingsEntry>
               <option name="version" value="2.3.8" />
+<<<<<<< HEAD
+              <option name="sourceDir" value="C:\workspace\QuizScala\app" />
+              <option name="confDir" value="C:\workspace\QuizScala\conf" />
+=======
               <option name="sourceDir" value="$PROJECT_DIR$/conf" />
               <option name="confDir" value="$PROJECT_DIR$/app" />
               <option name="playDistrPath" value="$USER_HOME$/.ivy2/cache/com.typesafe.play/play_2.10/jars/play_2.10-2.3.8.jar" />
+>>>>>>> 4960b7bcb5afd8c243782b96aa18870af1e5d407
               <option name="templateImports">
                 <list>
                   <option value="play.api.templates.PlayMagic._" />
