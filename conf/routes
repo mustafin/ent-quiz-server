@@ -3,9 +3,19 @@
 # ~~~~
 
 # Home page
-GET     /                           controllers.Application.index
+GET        /                    controllers.Application.index
+
+GET        /login               controllers.Auth.login
+
+
+
+# CATEGORY
+GET         /category/list      controllers.CategoryController.list
+GET         /category/add       controllers.CategoryController.add
+GET         /category/edit      controllers.CategoryController.edit(id: Option[Int])
+GET         /category/delete    controllers.CategoryController.delete(id: Option[Int])
 
 # Map static resources from the /public folder to the /assets URL path
-GET     /assets/*file               controllers.Assets.at(path="/public", file)
+GET        /assets/*file        controllers.Assets.at(path="/public", file)
 
     
