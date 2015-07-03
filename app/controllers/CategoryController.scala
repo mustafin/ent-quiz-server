@@ -1,13 +1,14 @@
 package controllers
 
-import models.{CategoryTable, Tables, Category}
+import models.{Category, CategoryTable}
 import play.Logger
-import play.api.data.Forms._
-import play.api.data._
 import play.api.data.Form
-import play.api.mvc.{Action, Controller}
-import play.api.db.slick._
+import play.api.data.Forms._
 import play.api.db.slick.Config.driver.simple._
+import play.api.db.slick._
+import play.api.mvc.Controller
+
+import scala.slick.lifted.TableQuery
 
 /**
  * Created by Murat.
@@ -15,7 +16,7 @@ import play.api.db.slick.Config.driver.simple._
 object CategoryController extends Controller{
 
 
-  val categories = Tables.categories
+  lazy val categories = TableQuery[CategoryTable]
 
   val form = Form(
     mapping(
@@ -30,17 +31,27 @@ object CategoryController extends Controller{
   }
 
   def add = DBAction{ implicit request =>
-    val person = form.bindFromRequest.get
-    categories.insert(person)
+    val category = form.bindFromRequest.get
+    categories.insert(category)
     Redirect(routes.CategoryController.list())
   }
 
-  def edit(id: Option[Int]) = Action{
+  def edit(id: Int) = DBAction{ implicit rs =>
+    val category = categories.filter(_.id === id).firstOption
+    if(category.isDefined)
+      Ok(views.html.category.edit(category.get, form.fill(category.get)))
+    else NotFound("Not FOund")
+  }
+
+  def updateCategory(id: Int) = DBAction{ implicit rs =>
+    val category = form.bindFromRequest.get
+    val categoryToUpdate: Category = category.copy(Some(id))
+    categories.filter(_.id === id).update(categoryToUpdate)
     Redirect(routes.CategoryController.list())
   }
 
-  def delete(id: Option[Int]) = Action{
-//    DB.delete(DB.fetchById(id))
+  def delete(id: Int) = DBAction{ implicit rs =>
+    categories.filter(_.id === id).delete
     Redirect(routes.CategoryController.list())
   }
 

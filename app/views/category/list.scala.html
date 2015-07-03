@@ -6,26 +6,25 @@
 
   <section class="content">
     <div class="box">
-      <div class="box-header with-border"><h1>label.subjects</h1></div>
+      <div class="box-header with-border"><h1>@Messages("label.subjects")</h1></div>
 
       <div class="box-body">
 
-        @form(action=routes.CategoryController.add(), 'method -> "post", 'method -> "asf"){
+        @form(action=routes.CategoryController.add(), 'method -> "post", 'class -> "form"){
             <div class="form-group">
               @inputText(catForm("name"), 'class -> "form-control", 'placeholder -> Messages("label.subject"))
             </div>
             <div class="form-group">
-              <button type="submit" class="btn btn-primary">label.add</button>
+              <button type="submit" class="btn btn-success">@Messages("label.add")</button>
             </div>
-
         }
 
         <table class="table table-bordered">
           <tbody>
             <tr>
               <th>#</th>
-              <th>label.subject</th>
-              <th>label.options</th>
+              <th>@Messages("label.subject")</th>
+              <th>@Messages("label.options")</th>
             </tr>
 
             @categories.map{category =>
@@ -34,16 +33,12 @@
                 <td>@category.name</td>
                 <td>
                   <div class="btn-group pull-right">
-                    <a href="@routes.CategoryController.edit(category.id)" class="btn btn-info"><i class="fa fa-edit"></i></a>
-                    <a href="@routes.CategoryController.delete(category.id)" class="btn btn-danger"><i class="fa fa-close"></i></a>
+                    <a href="@routes.CategoryController.edit(category.id.get)" class="btn btn-info"><i class="fa fa-edit"></i></a>
+                    <a href="@routes.CategoryController.delete(category.id.get)" class="btn btn-danger"><i class="fa fa-close"></i></a>
                   </div>
                 </td>
               </tr>
             }
-            @*<c:forEach items="${categories}" var="category">*@
-
-            @*</c:forEach>*@
-
           </tbody>
         </table>
       </div>
