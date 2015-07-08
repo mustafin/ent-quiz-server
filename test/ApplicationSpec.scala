@@ -30,8 +30,7 @@ class ApplicationSpec extends Specification {
 
     "add user to database" in new WithApplication() {
       val user = new User(None, "admin", "12435")
-      val dao = new UserDAO
-      dao.create(user)
+      UserDAO.create(user)
     }
 
   }
