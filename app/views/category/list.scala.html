@@ -4,6 +4,7 @@
 
 @templates.main("title"){
 
+  <!--suppress CssUnknownProperty -->
   <section class="content">
     <div class="box">
       <div class="box-header with-border"><h1>@Messages("label.subjects")</h1></div>
@@ -24,13 +25,13 @@
             <tr>
               <th>#</th>
               <th>@Messages("label.subject")</th>
-              <th>@Messages("label.options")</th>
+              <th style="width: 10%">@Messages("label.options")</th>
             </tr>
 
             @categories.map{category =>
               <tr>
                 <td>@category.id</td>
-                <td>@category.name</td>
+                <td><a href="@routes.QuestionController.list(category.id.get)">@category.name</a></td>
                 <td>
                   <div class="btn-group pull-right">
                     <a href="@routes.CategoryController.edit(category.id.get)" class="btn btn-info"><i class="fa fa-edit"></i></a>
@@ -44,5 +45,6 @@
       </div>
     </div>
   </section>
+
 
 }

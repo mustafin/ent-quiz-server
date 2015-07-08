@@ -1,3 +1,4 @@
+import models.{UserDAO, User}
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._
@@ -26,5 +27,12 @@ class ApplicationSpec extends Specification {
       contentType(home) must beSome.which(_ == "text/html")
       contentAsString(home) must contain ("Your new application is ready.")
     }
+
+    "add user to database" in new WithApplication() {
+      val user = new User(None, "admin", "12435")
+      val dao = new UserDAO
+      dao.create(user)
+    }
+
   }
 }

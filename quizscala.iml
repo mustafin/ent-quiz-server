@@ -15,8 +15,9 @@
       <sourceFolder url="file://$MODULE_DIR$/target/web/public/test" type="java-test-resource" />
       <sourceFolder url="file://$MODULE_DIR$/test/resources" type="java-test-resource" />
       <excludeFolder url="file://$MODULE_DIR$/target/resolution-cache" />
-      <excludeFolder url="file://$MODULE_DIR$/target/scala-2.10" />
+      <excludeFolder url="file://$MODULE_DIR$/target/specs2-reports" />
       <excludeFolder url="file://$MODULE_DIR$/target/streams" />
+      <excludeFolder url="file://$MODULE_DIR$/target/test-reports" />
       <excludeFolder url="file://$MODULE_DIR$/target/web" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -142,6 +143,6 @@
     <orderEntry type="library" name="SBT: org.joda:joda-money:0.9:jar" level="project" />
     <orderEntry type="library" name="SBT: org.reflections:reflections:0.9.8:jar" level="project" />
     <orderEntry type="library" name="SBT: com.typesafe.play:play-jdbc_2.11:2.3.2:jar" level="project" />
-    <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.18:jar" level="project" />
+    <orderEntry type="library" name="SBT: mysql:mysql-connector-java:5.1.25:jar" level="project" />
   </component>
 </module>

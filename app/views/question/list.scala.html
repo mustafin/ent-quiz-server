@@ -1,0 +1,94 @@
+@(quesForm: Form[Tuple2[Question, Seq[Answer]]], questions: List[Question], catId: Int)
+
+@import helper._
+
+@templates.main(Messages("label.questions")){
+  <section class="content">
+    <div class="box">
+      <div class="box-header with-border"><h1>@Messages("label.questions")</h1></div>
+
+      <div class="box-body">
+
+        @form(action = routes.QuestionController.add(catId)){
+
+          <div class="form-group">
+            @inputText(quesForm("title"), 'class -> "form-control", 'placeholder -> Messages("label.question"))
+          </div>
+
+          <div class="form-group">
+
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>@Messages("label.answer")</th>
+                  <th>@Messages("label.isTrue")</th>
+                </tr>
+              </thead>
+              <tbody class="df-container">
+                <tr class="df-temp">
+                  <td><input type="text" name="answers[0].title" class="form-control df-field" placeholder="@Messages("label.answer")"></td>
+                  <td>
+                    <label>
+                      <input class="df-field" type="checkbox" name="answers[0].isTrue" value="true">
+                    </label>
+                  </td>
+                  <td>
+                    <button class="btn btn-xs btn-danger df-close"><i class="fa fa-close"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="form-group">
+              <button type="button" class="btn btn-primary" id="df-add">+ @Messages("label.addanswer")</button>
+            </div>
+
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary">@Messages("label.save")</button>
+            </div>
+
+          </div>
+        }
+
+        <table class="table table-bordered">
+          <tbody>
+          <tr>
+            <th>#</th>
+            <th>@Messages("label.subject")</th>
+            <th>@Messages("label.options")</th>
+          </tr>
+
+          @questions.map{question =>
+            <tr>
+              <td>@question.id</td>
+              <td>@question.title</td>
+              <td>
+                <div class="btn-group pull-right">
+                  <a href="@routes.QuestionController.edit(question.id.get)" class="btn btn-info"><i class="fa fa-edit"></i></a>
+                  <button data-href="@routes.QuestionController.delete(question.id.get)" class="btn btn-danger"
+                  data-toggle="modal" data-target="#confirmDelete" data-title="@Messages("label.delete.question")" data-message="@Messages("label.delete.confirm", question.title)">
+                    <i class="fa fa-close"></i></button>
+                </div>
+              </td>
+            </tr>
+          }
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  @partials.deleteconfirm()
+
+
+  <script type="text/javascript" src="@routes.Assets.at("javascripts/dynamic_form.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>
+
+  <script type="text/javascript">
+      var options = {counter: 0, names:["answers[%d].title", "answers[%d].isTrue"]};
+      var dynamicForm = new DynamicForm(options);
+      $("#df-add").click(function(){
+        dynamicForm.addElement();
+      });
+  </script>
+}

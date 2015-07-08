@@ -1,0 +1,88 @@
+@(question: Question, quesForm: Form[Tuple2[Question, Seq[Answer]]])
+
+@import helper._
+
+@templates.main(Messages("label.edit")) {
+
+    <section class="content">
+        <div class="box">
+            <div class="box-header with-border"><h1>@Messages("label.edit")</h1></div>
+
+            <div class="box-body">
+
+                @form(action = routes.QuestionController.updateQuestion(question.id.get)){
+                    <div class="form-group">
+                    @inputText(quesForm("title"), 'class -> "form-control", 'placeholder -> Messages("label.subject"))
+                    </div>
+
+                    <input type="hidden" name="catId" value="@question.catId"/>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>@Messages("label.answer")</th>
+                                <th>@Messages("label.isTrue")</th>
+                            </tr>
+                        </thead>
+                        <tbody class="df-container">
+
+                            <tr class="df-temp">
+                                <input class="df-field" type="hidden" name="answers[0].quesId" value="@question.id"/>
+                                <td><input type="text" name="answers[0].title" class="form-control df-field" placeholder="@Messages("label.answer")"></td>
+                                <td>
+                                    <label>
+                                        <input class="df-field" type="checkbox" name="answers[0].isTrue" value="true">
+                                    </label>
+                                </td>
+                                <td>
+                                    <button class="btn btn-xs btn-danger df-close"><i class="fa fa-close"></i></button>
+                                </td>
+                            </tr>
+
+                            @for((answer,i) <- quesForm.get._2.zipWithIndex){
+                                <tr>
+                                    <input class="df-field" type="hidden" name="answers[@i].quesId" value="@question.id"/>
+                                    <input class="df-field" type="hidden" name="answers[@i].id" value="@answer.id"/>
+                                    <td><input type="text" name="answers[@i].title" value="@answer.title" class="form-control df-field" placeholder="@Messages("label.answer")"></td>
+                                    <td>
+                                        <label>
+                                            <input class="df-field" type="checkbox" name="answers[@i].isTrue" value="true" @{if(answer.isTrue)"checked"}>
+                                        </label>
+                                    </td>
+                                    <td>
+
+                                        <button data-href="@routes.QuestionController.deleteAnswer(answer.id.getOrElse(0))" class="btn btn-xs btn-danger" type="button" data-toggle="modal" data-target="#confirmDelete" data-title="@Messages("label.delete.answer")" data-message="@Messages("label.delete.confirm", answer.title)">
+                                            <i class="fa fa-close"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    <div class="form-group">
+                        <button type="button" class="btn btn-primary" id="df-add">+ @Messages("label.addanswer")</button>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">@Messages("label.edit")</button>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    @partials.deleteconfirm()
+
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/dynamic_form.js")"></script>
+    <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>
+
+    <script type="text/javascript">
+        var options = {counter: @quesForm.get._2.length, names:["answers[%d].quesId", "answers[%d].title", "answers[%d].isTrue"]};
+        var dynamicForm = new DynamicForm(options);
+        $("#df-add").click(function(){
+          dynamicForm.addElement();
+        });
+
+
+    </script>
+}
