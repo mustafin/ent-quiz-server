@@ -5,6 +5,7 @@ import play.api.data.Forms._
 import play.api.data._
 import play.api.db.DB
 import play.api.db.slick.DBAction
+import play.api.mvc.Security.AuthenticatedRequest
 import play.api.mvc._
 import views.html
 
@@ -50,6 +51,23 @@ object Auth extends Controller{
 
 trait Secured {
 
+  case class AuthenticatedRequest[A](
+                                      user: User, request: Request[A]
+                                      ) extends WrappedRequest(request)
+
+  def Authenticated[A](p: BodyParser[A])(f: AuthenticatedRequest[A] => Result) = {
+    Action(p) { request =>
+      request.session.get(Security.username).flatMap(u => UserDAO.findByName(u)).map { user =>
+        f(AuthenticatedRequest(user, request))
+      }.getOrElse(onUnauthorized(request))
+    }
+  }
+
+  // Overloaded method to use the default body parser
+  import play.api.mvc.BodyParsers._
+  def Authenticated(f: AuthenticatedRequest[AnyContent] => Result): Action[AnyContent]  = {
+    Authenticated(parse.anyContent)(f)
+  }
 
   def username(request: RequestHeader) = request.session.get(Security.username)
 
@@ -65,7 +83,7 @@ trait Secured {
    * This method shows how you could wrap the withAuth method to also fetch your user
    * You will need to implement UserDAO.findOneByUsername
    */
-  def withUser(f: User => Request[AnyContent] => Result) = withAuth { username => implicit request =>
+  def withUser[A](f: User => Request[AnyContent] => Result) = withAuth { username => implicit request =>
     UserDAO.findByName(username).map { user =>
       f(user)(request)
     }.getOrElse(onUnauthorized(request))

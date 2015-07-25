@@ -39,4 +39,3 @@ GET         /assets/*file                         controllers.Assets.at(path="/p
 GET         /upload/*file                         controllers.Uploads.at(file)
 
 
-    

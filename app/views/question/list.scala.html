@@ -9,10 +9,13 @@
 
       <div class="box-body">
 
-        @form(action = routes.QuestionController.add(catId)){
-
+        @form(action = routes.QuestionController.add(catId), 'class -> "dropzone", 'enctype -> "multipart/form-data"){
           <div class="form-group">
-            @inputText(quesForm("title"), 'class -> "form-control", 'placeholder -> Messages("label.question"))
+            <label for="picture">@Messages("label.image")</label>
+            <input type="file" name="picture">
+          </div>
+          <div class="form-group">
+            @textarea(quesForm("title"), 'class -> "form-control", 'placeholder -> Messages("label.question"), '_label -> "")
           </div>
 
           <div class="form-group">
@@ -43,7 +46,7 @@
             </div>
 
             <div class="form-group">
-              <button type="submit" class="btn btn-primary">@Messages("label.save")</button>
+              <button type="submit" class="btn btn-success">@Messages("label.save")</button>
             </div>
 
           </div>
@@ -53,7 +56,7 @@
           <tbody>
           <tr>
             <th>#</th>
-            <th>@Messages("label.subject")</th>
+            <th>@Messages("label.questions")</th>
             <th>@Messages("label.options")</th>
           </tr>
 
@@ -79,8 +82,6 @@
   </section>
 
   @partials.deleteconfirm()
-
-
   <script type="text/javascript" src="@routes.Assets.at("javascripts/dynamic_form.js")"></script>
   <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>
 

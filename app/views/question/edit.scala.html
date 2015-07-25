@@ -10,11 +10,34 @@
 
             <div class="box-body">
 
-                @form(action = routes.QuestionController.updateQuestion(question.id.get)){
+                @form(action = routes.QuestionController.updateQuestion(question.id.get),
+                    'enctype -> "multipart/form-data"){
+                    @if(!question.img.isEmpty) {
+                        <div class="form-group">
+                            <img src="@routes.Uploads.at(question.img)" alt="@Messages("label.image")"/>
+                            <button data-href="@routes.QuestionController.deleteImage(question.id.getOrElse(0))"
+                                    class="btn btn-xs btn-danger"
+                                    style="vertical-align: top"
+                                    type="button" data-toggle="modal"
+                                    data-target="#confirmDelete"
+                                    data-title="@Messages("label.delete.image")"
+                                    data-message="@Messages("label.delete.confirm",
+                                    Messages("label.thisimage"))">
+                                <i class="fa fa-close"></i>
+                            </button>
+                        </div>
+                    }else{
+                        <div class="form-group">
+                            <label for="picture">@Messages("label.image")</label>
+                            <input type="file" name="picture">
+                        </div>
+                    }
                     <div class="form-group">
-                    @inputText(quesForm("title"), 'class -> "form-control", 'placeholder -> Messages("label.subject"))
+                        @textarea(quesForm("title"),
+                            'class       ->     "form-control",
+                            'placeholder ->     Messages("label.subject"),
+                            '_label      ->     Messages("label.subject"))
                     </div>
-
                     <input type="hidden" name="catId" value="@question.catId"/>
 
                     <table class="table">
@@ -64,7 +87,8 @@
                     </div>
 
                     <div class="form-group">
-                        <button type="submit" class="btn btn-primary">@Messages("label.edit")</button>
+                        <button type="submit" class="btn btn-success">@Messages("label.edit")</button>
+                        <a href="@routes.QuestionController.list(question.catId)" class="btn btn-primary">@Messages("label.cancel")</a>
                     </div>
                 }
             </div>

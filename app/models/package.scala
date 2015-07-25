@@ -38,21 +38,22 @@ package object models {
     override def * = (id, name) <> (Category.tupled, Category.unapply)
   }
 
-  case class Question(id: Option[Int], title: String, catId: Int)
+  case class Question(id: Option[Int], title: String, catId: Int, img: String)
 
   class QuestionTable(tag: Tag) extends Table[Question](tag, "QUESTION"){
 
     def id = column[Option[Int]]("ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
     def catId = column[Int]("CATEGORY_ID")
+    def img = column[String]("IMG")
     def category = foreignKey("CATEGORY_FK", catId, Tables.categories)(_.id.get, onDelete=ForeignKeyAction.Cascade)
-    override def * = (id, title, catId) <> (Question.tupled, Question.unapply)
+    override def * = (id, title, catId, img) <> (Question.tupled, Question.unapply)
 
   }
 
   case class Answer(id: Option[Int], title: String, isTrue: Boolean, quesId: Int)
 
-  class AnswerTable(tag: Tag) extends Table[Answer](tag, "Answer"){
+  class AnswerTable(tag: Tag) extends Table[Answer](tag, "ANSWER"){
 
     def id = column[Option[Int]]("ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
