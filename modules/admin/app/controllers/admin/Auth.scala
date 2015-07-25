@@ -1,11 +1,9 @@
-package controllers
+package controllers.admin
 
-import models.{UserDAO, User}
+import controllers.admin
+import models.admin.{User, UserDAO}
 import play.api.data.Forms._
 import play.api.data._
-import play.api.db.DB
-import play.api.db.slick.DBAction
-import play.api.mvc.Security.AuthenticatedRequest
 import play.api.mvc._
 import views.html
 
@@ -31,13 +29,13 @@ object Auth extends Controller{
   }
 
   def login = Action { implicit request =>
-    Ok(html.login(loginForm))
+    Ok(html.admin.login(loginForm))
   }
 
   def authenticate = Action { implicit request =>
     loginForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(html.login(formWithErrors)),
-      user => Redirect(routes.Application.index()).withSession(Security.username -> user.username)
+      formWithErrors => BadRequest(html.admin.login(formWithErrors)),
+      user => Redirect(admin.routes.Application.index()).withSession(Security.username -> user.username)
     )
   }
 

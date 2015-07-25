@@ -1,13 +1,14 @@
+package models
+
 
 import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend
-
 import scala.slick.lifted.{TableQuery, Tag}
 
 /**
  * Created by Murat.
  */
-package object models {
+package object admin {
 
   object Tables{
     lazy val categories = TableQuery[CategoryTable]

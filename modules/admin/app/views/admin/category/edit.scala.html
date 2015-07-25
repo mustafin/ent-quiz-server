@@ -1,6 +1,9 @@
+@import controllers.admin.routes
+@import helper._
+@import models.admin.Category
+@import views.html.admin.{templates, partials}
 @(category: Category, catForm: Form[Category])
 
-@import helper._
 
 @templates.main(Messages("label.edit")){
 

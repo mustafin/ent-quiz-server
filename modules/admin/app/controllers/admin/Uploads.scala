@@ -1,17 +1,17 @@
-package controllers
+package controllers.admin
 
 import java.io.File
 
-import play.api.{Configuration, Play}
 import play.api.Play.current
 import play.api.mvc._
+import play.api.{Configuration, Play}
 
 object Uploads extends Controller {
 
   import play.api.http.ContentTypes
   import play.api.libs.MimeTypes
-  import play.api.libs.iteratee.Enumerator
   import play.api.libs.concurrent.Execution.Implicits.defaultContext
+  import play.api.libs.iteratee.Enumerator
 
   def at(file: String) = Action { implicit request =>
     val contentUrl = Play.configuration.getString("application.upload")

@@ -1,11 +1,14 @@
 package controllers
 
-import play.api.mvc._
+import play.api.mvc.{Action, Controller}
 
-object Application extends Controller with Secured{
+/**
+ * Created by Murat.
+ */
+object Application extends Controller{
 
-  def index = withAuth{ username => implicit rs =>
-    Ok(views.html.index("Your new application is ready."))
+  def index = Action{
+    Ok("Good")
   }
 
 }

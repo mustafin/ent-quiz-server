@@ -1,15 +1,15 @@
-package controllers
+package controllers.admin
 
-import models._
+import models.admin._
+import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.db.DB
-import play.api.db.slick.{Database => _, _}
+import play.api.db.slick.{Database => _}
+import play.api.mvc.Controller
+import views.html.admin
+
 import scala.slick.driver.MySQLDriver.simple._
-import play.api.mvc.{Action, Controller}
-import play.api.Play.current
-
-
 import scala.slick.lifted.TableQuery
 
 /**
@@ -42,14 +42,14 @@ object QuestionController extends Controller with Secured {
 
   def list(catId: Int) = Authenticated { implicit rs =>
     val list = db.withSession { implicit session => questions.filter(_.catId === catId).list }
-    Ok(views.html.question.list(form, list, catId))
+    Ok(admin.question.list(form, list, catId))
   }
 
   def add(newCatId: Int) = Authenticated(parse.multipartFormData) { implicit rs =>
     form.bindFromRequest.fold(
       formWithErrors => {
         val catQuestions = db.withSession { implicit session => questions.filter(_.catId === newCatId).list }
-        BadRequest(views.html.question.list(formWithErrors, catQuestions, newCatId))
+        BadRequest(admin.question.list(formWithErrors, catQuestions, newCatId))
       },
       question => {
         val fileName = rs.body.file("picture").map {
@@ -72,7 +72,7 @@ object QuestionController extends Controller with Secured {
     val question = db.withSession { implicit session =>
       questions.filter(_.id === id).firstOption }
     if (question.isDefined)
-      Ok(views.html.question.edit(question.get, form.fill((question.get, Tables.questionAnswers(id)(db.createSession())))))
+      Ok(admin.question.edit(question.get, form.fill((question.get, Tables.questionAnswers(id)(db.createSession())))))
     else NotFound("Not FOund")
   }
 

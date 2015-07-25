@@ -1,3 +1,6 @@
+@import controllers.admin.routes
+@import models.admin.Category
+@import views.html.admin._
 @(catForm: Form[Category], categories: List[Category])
 
 @import helper._
@@ -12,9 +15,9 @@
 
       <div class="box-body">
 
-        @form(action=routes.CategoryController.add(), 'method -> "post", 'class -> "form"){
+        @form(action = routes.CategoryController.add(), 'method -> "post", 'class -> "form"){
             <div class="form-group">
-              @inputText(catForm("name"), 'class -> "form-control", 'placeholder -> Messages("label.subject"), '_label -> "")
+              @inputText(catForm("name"), 'class -> "form-control", 'placeholder -> Messages("label.subject"), '_label -> "public")
             </div>
             <div class="form-group">
               <button type="submit" class="btn btn-success">@Messages("label.add")</button>
@@ -51,6 +54,6 @@
 
   @partials.deleteconfirm()
 
-  <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>
+  <script type="text/javascript" src="@routes.Assets.at("public/javascripts/confirm_delete.js")"></script>
 
 }

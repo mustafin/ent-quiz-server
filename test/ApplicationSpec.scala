@@ -1,4 +1,4 @@
-import models.{UserDAO, User}
+import models.admin.{UserDAO, User}
 import org.specs2.mutable._
 import org.specs2.runner._
 import org.junit.runner._

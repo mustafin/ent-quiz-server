@@ -1,15 +1,14 @@
-package controllers
+package controllers.admin
 
-import models.{CategoryTable, Category}
+import models.admin.{Category, CategoryTable}
+import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.db.DB
-import scala.slick.driver.MySQLDriver.simple._
 import play.api.db.slick.{Database => _, _}
 import play.api.mvc.Controller
-import play.api.Play.current
 
-
+import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.lifted.TableQuery
 
 /**
@@ -31,13 +30,13 @@ object CategoryController extends Controller with Secured{
   )
 
   def list = withAuth{ username => implicit rs =>
-    Ok(views.html.category.list(form, getCategories))
+    Ok(views.html.admin.category.list(form, getCategories))
   }
 
   def add = withAuth{ username => implicit rs =>
     form.bindFromRequest.fold(
       formWithErrors => {
-        BadRequest(views.html.category.list(formWithErrors, getCategories))
+        BadRequest(views.html.admin.category.list(formWithErrors, getCategories))
       },
       category => {
         db.withSession { implicit session => categories.insert(category)}
@@ -49,7 +48,7 @@ object CategoryController extends Controller with Secured{
   def edit(id: Int) = DBAction{ implicit rs =>
     val category = db.withSession { implicit session => categories.filter(_.id === id).firstOption }
     if(category.isDefined)
-      Ok(views.html.category.edit(category.get, form.fill(category.get)))
+      Ok(views.html.admin.category.edit(category.get, form.fill(category.get)))
     else NotFound("Not FOund")
   }
 

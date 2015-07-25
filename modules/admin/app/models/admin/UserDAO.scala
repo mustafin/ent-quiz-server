@@ -1,11 +1,10 @@
-package models
+package models.admin
 
 import java.security.MessageDigest
 
 import play.api.Logger
-import play.api.db.DB
-
 import play.api.Play.current
+import play.api.db.DB
 
 import scala.slick.driver.MySQLDriver.simple._
 

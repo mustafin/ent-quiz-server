@@ -1,5 +1,4 @@
-package models
-
+package models.admin
 
 import play.api.Play.current
 import play.api.db.DB

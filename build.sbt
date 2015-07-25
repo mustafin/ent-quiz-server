@@ -2,7 +2,9 @@ name := "QuizScala"
 
 version := "1.0"
 
-lazy val `quizscala` = (project in file(".")).enablePlugins(PlayScala)
+lazy val `quizscala` = (project in file(".")).enablePlugins(PlayScala).dependsOn(admin)
+
+lazy val admin = (project in file("modules/admin")).enablePlugins(PlayScala)
 
 scalaVersion := "2.11.1"
 
@@ -15,4 +17,4 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-nop" % "1.6.4"
 )
 
-unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )  
+unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )

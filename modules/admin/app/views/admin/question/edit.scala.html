@@ -1,6 +1,12 @@
+@import controllers.admin
+@import controllers.admin.routes
+@import models.admin.{Question, Answer}
+@import views.html.admin.{templates, partials}
+@import helper._
+
 @(question: Question, quesForm: Form[Tuple2[Question, Seq[Answer]]])
 
-@import helper._
+
 
 @templates.main(Messages("label.edit")) {
 
@@ -15,7 +21,7 @@
                     @if(!question.img.isEmpty) {
                         <div class="form-group">
                             <img src="@routes.Uploads.at(question.img)" alt="@Messages("label.image")"/>
-                            <button data-href="@routes.QuestionController.deleteImage(question.id.getOrElse(0))"
+                            <button data-href="@admin.QuestionController.deleteImage(question.id.getOrElse(0))"
                                     class="btn btn-xs btn-danger"
                                     style="vertical-align: top"
                                     type="button" data-toggle="modal"
@@ -74,7 +80,7 @@
                                     </td>
                                     <td>
 
-                                        <button data-href="@routes.QuestionController.deleteAnswer(answer.id.getOrElse(0))" class="btn btn-xs btn-danger" type="button" data-toggle="modal" data-target="#confirmDelete" data-title="@Messages("label.delete.answer")" data-message="@Messages("label.delete.confirm", answer.title)">
+                                        <button data-href="@admin.QuestionController.deleteAnswer(answer.id.getOrElse(0))" class="btn btn-xs btn-danger" type="button" data-toggle="modal" data-target="#confirmDelete" data-title="@Messages("label.delete.answer")" data-message="@Messages("label.delete.confirm", answer.title)">
                                             <i class="fa fa-close"></i>
                                         </button>
                                     </td>
@@ -88,7 +94,7 @@
 
                     <div class="form-group">
                         <button type="submit" class="btn btn-success">@Messages("label.edit")</button>
-                        <a href="@routes.QuestionController.list(question.catId)" class="btn btn-primary">@Messages("label.cancel")</a>
+                        <a href="@admin.QuestionController.list(question.catId)" class="btn btn-primary">@Messages("label.cancel")</a>
                     </div>
                 }
             </div>

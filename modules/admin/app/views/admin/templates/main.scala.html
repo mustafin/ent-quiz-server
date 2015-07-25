@@ -1,4 +1,11 @@
 @(title: String, head: Html = Html(""))(content: Html)
+
+@import controllers.admin.Application
+@import controllers.admin.Auth
+@import controllers.admin.CategoryController
+@import controllers.admin.routes
+
+
 <!DOCTYPE html>
 <html>
 
@@ -19,7 +26,7 @@
 <div class="wrapper">
 <header class="main-header">
     <!-- Logo -->
-    <a href="@routes.Application.index()" class="logo">
+    <a href="@Application.index()" class="logo">
         <!-- mini logo for sidebar mini 50x50 pixels -->
         <span class="logo-mini"><b>A</b>LT</span>
         <!-- logo for regular state and mobile devices -->
