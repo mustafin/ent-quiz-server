@@ -1,0 +1,12 @@
+@(elements: helper.FieldElements)
+
+<div class="@if(elements.hasErrors) {error}">
+
+    @if(elements.infos.contains("Required")){
+        <label for="@elements.id" class="pull-left" style="color:red">*</label>
+    }
+    <div class="input">
+        @elements.input
+        <span class="errors">@elements.errors.mkString(", ")</span>
+    </div>
+</div>

@@ -1,10 +1,6 @@
-@(title: String, head: Html = Html(""))(content: Html)
-
-@import controllers.admin.Application
-@import controllers.admin.Auth
-@import controllers.admin.CategoryController
 @import controllers.admin.routes
 
+@(title: String, head: Html = Html(""), modals: Html = Html(""), scripts: Html = Html(""))(content: Html)
 
 <!DOCTYPE html>
 <html>
@@ -26,7 +22,7 @@
 <div class="wrapper">
 <header class="main-header">
     <!-- Logo -->
-    <a href="@Application.index()" class="logo">
+    <a href="@routes.Application.index()" class="logo">
         <!-- mini logo for sidebar mini 50x50 pixels -->
         <span class="logo-mini"><b>A</b>LT</span>
         <!-- logo for regular state and mobile devices -->
@@ -164,7 +160,6 @@
   @content
 </div>
 
-
 <footer class="main-footer">
     @*<div class="pull-right hidden-xs">*@
         @*<b>Version</b> 2.0*@
@@ -174,11 +169,15 @@
 <div class="control-sidebar-bg" style="position: absolute; height: 1076px;"></div>
 </div>
 
+@modals
+
 <!-- Bootstrap 3.3.2 JS -->
 <script src="@routes.Assets.at("bootstrap/js/bootstrap.min.js")" type="text/javascript"></script>
 <!-- AdminLTE App -->
 <script src="@routes.Assets.at("javascripts/app.min.js")" type="text/javascript"></script>
 <!-- AdminLTE for demo purposes -->
 <script src="@routes.Assets.at("javascripts/demo.js")" type="text/javascript"></script>
+@scripts
+
 </body>
 </html>

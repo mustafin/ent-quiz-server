@@ -2,9 +2,10 @@ name := "QuizScala"
 
 version := "1.0"
 
-lazy val `quizscala` = (project in file(".")).enablePlugins(PlayScala).dependsOn(admin)
+lazy val quizscala = (project in file(".")).enablePlugins(PlayScala).dependsOn(admin).dependsOn(webservice)
 
 lazy val admin = (project in file("modules/admin")).enablePlugins(PlayScala)
+lazy val webservice = (project in file("modules/webservice")).enablePlugins(PlayScala)
 
 scalaVersion := "2.11.1"
 

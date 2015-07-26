@@ -25,7 +25,7 @@ object CategoryController extends Controller with Secured{
   val form = Form(
     mapping(
       "id" -> ignored[Option[Int]](None),
-      "name" -> text
+      "name" -> nonEmptyText
     )(Category.apply) (Category.unapply)
   )
 

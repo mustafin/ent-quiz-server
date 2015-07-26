@@ -1,4 +1,3 @@
-@import controllers.admin
 @import controllers.admin.routes
 @import models.admin.{Question, Answer}
 @import helper._
@@ -72,8 +71,8 @@
               <td>@question.title</td>
               <td>
                 <div class="btn-group pull-right">
-                  <a href="@admin.QuestionController.edit(question.id.get)" class="btn btn-info"><i class="fa fa-edit"></i></a>
-                  <button data-href="@admin.QuestionController.delete(question.id.get)" class="btn btn-danger"
+                  <a href="@routes.QuestionController.edit(question.id.get)" class="btn btn-info"><i class="fa fa-edit"></i></a>
+                  <button data-href="@routes.QuestionController.delete(question.id.get)" class="btn btn-danger"
                   data-toggle="modal" data-target="#confirmDelete" data-title="@Messages("label.delete.question")" data-message="@Messages("label.delete.confirm", question.title)">
                     <i class="fa fa-close"></i></button>
                 </div>

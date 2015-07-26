@@ -8,5 +8,5 @@ $('#confirmDelete').on('show.bs.modal', function (e) {
     $title = $(e.relatedTarget).attr('data-title');
     $(this).find('.modal-title').text($title);
 
-    $(this).find('#confirm').attr('href', $(e.relatedTarget).data('href'));
+    $(this).find('#confirm').prop('href', $(e.relatedTarget).data('href'));
 });
