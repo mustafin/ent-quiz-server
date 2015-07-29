@@ -8,8 +8,6 @@
 
 @(catForm: Form[Category], categories: List[Category])
 
-
-
 @templates.main(Messages("label.subjects"), modals = theModals, scripts = theScripts){
 
   <!--suppress ALL -->
@@ -20,16 +18,13 @@
 
       <div class="box-body">
 
-        @form(action = routes.CategoryController.add(), 'method -> "post", 'class -> "form"){
-            <div class="form-group">
-              @inputText(catForm("name"), 'class -> "form-control",
-                'placeholder -> Messages("label.subject"),
-                '_label -> "public")
-            </div>
-            <div class="form-group">
-              <button type="submit" class="btn btn-success">@Messages("label.add")</button>
-            </div>
+        @form(action = routes.CategoryController.add(), 'method -> "post", 'class -> "form-horizontal"){
+            @inputText(catForm("name"), 'class -> "form-control",
+              'placeholder -> Messages("label.subject"),
+              '_label -> Messages("label.subject"))
+            <button type="submit" class="btn btn-success">@Messages("label.add")</button>
         }
+        <br/>
 
         <table class="table table-bordered">
           <tbody>

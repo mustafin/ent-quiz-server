@@ -32,9 +32,10 @@ object QuestionController extends Controller with Secured {
           "id" -> optional(number),
           "title" -> text,
           "isTrue" -> boolean,
-          "quesId" -> optional(number)
-        )({ case (a, b, c, d) => Answer(a, b, c, d.getOrElse(0)) })
-         ({ case (Answer(a, b, c, d)) => Option((a, b, c, Option(d))) })
+          "quesId" -> optional(number),
+          "img" -> optional(text)
+        )({ case (a, b, c, d, e) => Answer(a, b, c, d.getOrElse(0), e.getOrElse("")) })
+         ({ case (Answer(a, b, c, d, e)) => Option((a, b, c, Option(d), Option(e))) })
       )
     )({ case (a, b, c, d, e) => (Question(a, b, c.getOrElse(0), d.getOrElse("")), e) })
      ({ case (Question(a, b, c, d), e) => Option((a, b, Option(c), Option(d), e)) })

@@ -1,12 +1,9 @@
 @(elements: helper.FieldElements)
 
-<div class="@if(elements.hasErrors) {error}">
+<div class="form-group @if(elements.hasErrors) {has-error}">
 
-    @if(elements.infos.contains("Required")){
-        <label for="@elements.id" class="pull-left" style="color:red">*</label>
-    }
-    <div class="input">
+    <div class="col-md-11">
         @elements.input
-        <span class="errors">@elements.errors.mkString(", ")</span>
     </div>
+
 </div>

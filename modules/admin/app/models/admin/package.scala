@@ -1,6 +1,8 @@
 package models
 
 
+import play.api.libs.json.Json
+
 import scala.slick.driver.MySQLDriver.simple._
 import scala.slick.jdbc.JdbcBackend
 import scala.slick.lifted.{TableQuery, Tag}
@@ -39,9 +41,13 @@ package object admin {
     override def * = (id, name) <> (Category.tupled, Category.unapply)
   }
 
-  case class Question(id: Option[Int], title: String, catId: Int, img: String)
+  case class Question(id: Option[Int], title: String, catId: Int, img: String){
+    implicit val qFormat = Json.format[Question]
+  }
+
 
   class QuestionTable(tag: Tag) extends Table[Question](tag, "QUESTION"){
+    implicit val writes = Json.writes[Question]
 
     def id = column[Option[Int]]("ID", O.PrimaryKey, O.AutoInc)
     def title = column[String]("TITLE")
@@ -52,7 +58,7 @@ package object admin {
 
   }
 
-  case class Answer(id: Option[Int], title: String, isTrue: Boolean, quesId: Int)
+  case class Answer(id: Option[Int], title: String, isTrue: Boolean, quesId: Int, img: String)
 
   class AnswerTable(tag: Tag) extends Table[Answer](tag, "ANSWER"){
 
@@ -60,9 +66,10 @@ package object admin {
     def title = column[String]("TITLE")
     def isTrue = column[Boolean]("IS_TRUE")
     def quesId = column[Int]("QUESTION_ID")
+    def img = column[String]("IMG")
     def question = foreignKey("QUESTION_FK", quesId, Tables.questions)(_.id.get)
 
-    override def * = (id, title, isTrue, quesId) <> (Answer.tupled, Answer.unapply)
+    override def * = (id, title, isTrue, quesId, img) <> (Answer.tupled, Answer.unapply)
 
   }
 

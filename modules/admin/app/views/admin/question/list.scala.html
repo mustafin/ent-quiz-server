@@ -28,13 +28,20 @@
             <table class="table">
               <thead>
                 <tr>
+                  <th width="50px">@Messages("label.image")</th>
                   <th>@Messages("label.answer")</th>
                   <th>@Messages("label.isTrue")</th>
                 </tr>
               </thead>
               <tbody class="df-container">
                 <tr class="df-temp">
-                  <td><input type="text" name="answers[0].title" class="form-control df-field" placeholder="@Messages("label.answer")"></td>
+                  <td>
+                    <input type="file" name="answers[0].img"/>
+                  </td>
+                  <td>
+                    <input type="text" name="answers[0].title"
+                                          class="form-control df-field"
+                                          placeholder="@Messages("label.answer")"></td>
                   <td>
                     <label>
                       <input class="df-field" type="checkbox" name="answers[0].isTrue" value="true">
