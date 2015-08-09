@@ -36,12 +36,15 @@
               <tbody class="df-container">
                 <tr class="df-temp">
                   <td>
-                    <input type="file" name="answers[0].img"/>
+                    <input type="hidden" name="answers[0].elId" value=""/>
+                  </td>
+                  <td>
+                    <input type="file" name="answers[0].img" class="df-field"/>
                   </td>
                   <td>
                     <input type="text" name="answers[0].title"
-                                          class="form-control df-field"
-                                          placeholder="@Messages("label.answer")"></td>
+                           class="form-control df-field" placeholder="@Messages("label.answer")">
+                  </td>
                   <td>
                     <label>
                       <input class="df-field" type="checkbox" name="answers[0].isTrue" value="true">
@@ -98,7 +101,7 @@
   <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>
 
   <script type="text/javascript">
-      var options = {counter: 0, names:["answers[%d].title", "answers[%d].isTrue"]};
+      var options = {counter: 0, names:["answers[%d].img", "answers[%d].title", "answers[%d].isTrue"]};
       var dynamicForm = new DynamicForm(options);
       $("#df-add").click(function(){
         dynamicForm.addElement();

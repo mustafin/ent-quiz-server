@@ -16,9 +16,9 @@ object Application extends Controller{
 
   lazy val db = Database.forDataSource(DB.getDataSource())
   lazy val questions = TableQuery[QuestionTable]
+  implicit val qFormat = Json.format[Question]
 
   def index = Action{
-    implicit val qFormat = Json.format[Question]
 
     val data = db.withSession { implicit session => questions.list }
     

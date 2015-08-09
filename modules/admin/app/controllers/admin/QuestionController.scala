@@ -1,6 +1,7 @@
 package controllers.admin
 
 import models.admin._
+import org.apache.commons.codec.binary.Base32
 import play.api.Play.current
 import play.api.data.Form
 import play.api.data.Forms._
@@ -50,20 +51,27 @@ object QuestionController extends Controller with Secured {
     form.bindFromRequest.fold(
       formWithErrors => {
         val catQuestions = db.withSession { implicit session => questions.filter(_.catId === newCatId).list }
+        println(formWithErrors.errorsAsJson)
         BadRequest(admin.question.list(formWithErrors, catQuestions, newCatId))
       },
       question => {
-        val fileName = rs.body.file("picture").map {
+        val fileNames = rs.body.files.map {
           img =>
             import java.io.File
             val uploadPath = current.configuration.getString("application.upload")
-            img.ref.moveTo(new File(uploadPath.getOrElse("") + File.separator + img.filename))
-            img.filename
-        }.getOrElse("")
+
+            val genName = new Base32().encode(System.currentTimeMillis() / 1000) + "." +
+              img.filename.replaceFirst("^[\\s\\S]+[.]", "")
+            img.ref.moveTo(new File(uploadPath.getOrElse("") + File.separator + genName))
+            img.key -> genName
+        }
+
+        val (quest, answerSeq) = question
+        val questionFileName = fileNames.map(_._2).find(_ == "picture").getOrElse("")
 
         val qId = db.withSession { implicit session =>
-          (questions returning questions.map(_.id)) += question._1.copy(catId = newCatId, img = fileName) }
-        db.withSession { implicit session => answers ++= question._2.map(_.copy(quesId = qId.getOrElse(0))) }
+          (questions returning questions.map(_.id)) += quest.copy(catId = newCatId, img = questionFileName) }
+        db.withSession { implicit session => answers ++= answerSeq.map(_.copy(quesId = qId.getOrElse(0))) }
         Redirect(routes.QuestionController.list(newCatId))
       }
     )
