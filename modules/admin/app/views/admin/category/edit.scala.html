@@ -2,7 +2,7 @@
 @import helper._
 @import models.admin.Category
 @import views.html.admin.{templates, partials}
-@(category: Category, catForm: Form[Category])
+@(category: Category, catForm: Form[Category])(implicit messages: Messages)
 
 
 @templates.main(Messages("label.edit")){

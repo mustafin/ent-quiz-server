@@ -6,7 +6,7 @@
 @import helper._
 @import helpers.ViewHelpers._
 
-@(catForm: Form[Category], categories: List[Category])
+@(catForm: Form[Category], categories: List[Category])(implicit messages: Messages)
 
 @templates.main(Messages("label.subjects"), modals = theModals, scripts = theScripts){
 
@@ -63,7 +63,7 @@
 }
 
 @theModals = {
-  @partials.deleteconfirm()
+  @partials.deleteconfirm
 }
 
 @theScripts = {

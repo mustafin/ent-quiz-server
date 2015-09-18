@@ -1,16 +1,20 @@
 package controllers.admin
 
+import javax.inject.Inject
+
 import controllers.admin
 import models.admin.{User, UserDAO}
 import play.api.data.Forms._
 import play.api.data._
+import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.mvc._
 import views.html
+import play.api.i18n.Messages.Implicits._
 
 /**
  * Created by murat on 7/2/15.
  */
-object Auth extends Controller{
+class Auth @Inject() (val messagesApi: MessagesApi) extends Controller with I18nSupport{
 
 
   val loginForm = Form(

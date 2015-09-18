@@ -1,0 +1,7 @@
+# GAME_USER add column `RATING`
+
+# --- !Ups
+
+ALTER TABLE GAME_USER ADD COLUMN `RATING` INT(11) DEFAULT 1200 NOT NULL;
+
+# --- !Downs

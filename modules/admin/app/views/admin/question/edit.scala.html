@@ -4,7 +4,7 @@
 @import views.html.admin.{templates, partials}
 @import helper._
 
-@(question: Question, quesForm: Form[Tuple2[Question, Seq[Answer]]])
+@(question: Question, quesForm: Form[Tuple2[Question, Seq[Answer]]])(implicit messages: Messages)
 
 @templates.main(Messages("label.edit")) {
 
@@ -103,7 +103,7 @@
         </div>
     </section>
 
-    @partials.deleteconfirm()
+    @partials.deleteconfirm
 
     <script type="text/javascript" src="@routes.Assets.at("javascripts/dynamic_form.js")"></script>
     <script type="text/javascript" src="@routes.Assets.at("javascripts/confirm_delete.js")"></script>

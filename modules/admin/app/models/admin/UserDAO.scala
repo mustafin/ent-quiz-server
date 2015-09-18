@@ -2,9 +2,10 @@ package models.admin
 
 import java.security.MessageDigest
 
-import play.api.Logger
+import play.api.{Play, Logger}
 import play.api.Play.current
-import play.api.db.DB
+import play.api.db.slick.DatabaseConfigProvider
+import slick.driver.JdbcProfile
 
 import scala.slick.driver.MySQLDriver.simple._
 
@@ -13,7 +14,7 @@ import scala.slick.driver.MySQLDriver.simple._
  */
 object UserDAO{
 
-  val db = Database.forDataSource(DB.getDataSource())
+  val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   def findByName(username: String): Option[User] = db withSession{ implicit  session =>
     Tables.users.filter(_.username === username).firstOption

@@ -1,7 +1,9 @@
 package models.admin
 
+import play.api.Play
 import play.api.Play.current
-import play.api.db.DB
+import play.api.db.slick.DatabaseConfigProvider
+import slick.driver.JdbcProfile
 
 import scala.slick.driver.MySQLDriver.simple._
 
@@ -10,7 +12,7 @@ import scala.slick.driver.MySQLDriver.simple._
  */
 object QuetionDAO {
 
-  val db = Database.forDataSource(DB.getDataSource())
+  val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
   lazy val questions = Tables.questions
 
   def list(catId: Int) = db.withSession { implicit session => questions.filter(_.catId === catId).list }

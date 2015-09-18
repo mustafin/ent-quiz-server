@@ -1,26 +1,29 @@
 package controllers.admin
 
+import javax.inject.Inject
+
 import models.admin._
 import org.apache.commons.codec.binary.Base32
+import play.api.Play
 import play.api.Play.current
+import play.api.i18n.{MessagesApi, I18nSupport}
 import play.api.data.Form
 import play.api.data.Forms._
-import play.api.db.DB
-import play.api.db.slick.{Database => _}
+import play.api.db.slick.DatabaseConfigProvider
 import play.api.mvc.Controller
+import slick.driver.JdbcProfile
 import views.html.admin
 
 import scala.slick.driver.MySQLDriver.simple._
-import scala.slick.lifted.TableQuery
 
 /**
  * Created by Murat.
  */
-object QuestionController extends Controller with Secured {
+class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Controller with Secured with I18nSupport {
 
   lazy val questions = TableQuery[QuestionTable]
   lazy val answers = TableQuery[AnswerTable]
-  lazy val db = Database.forDataSource(DB.getDataSource())
+  lazy val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   val form = Form(
     mapping(
@@ -43,7 +46,8 @@ object QuestionController extends Controller with Secured {
   )
 
   def list(catId: Int) = Authenticated { implicit rs =>
-    val list = db.withSession { implicit session => questions.filter(_.catId === catId).list }
+    val list = db withSession { implicit session => questions.filter(_.catId === catId).list }
+
     Ok(admin.question.list(form, list, catId))
   }
 
@@ -81,8 +85,12 @@ object QuestionController extends Controller with Secured {
     val question = db.withSession { implicit session =>
       questions.filter(_.id === id).firstOption }
     if (question.isDefined)
-      Ok(admin.question.edit(question.get, form.fill((question.get, Tables.questionAnswers(id)(db.createSession())))))
+      Ok(admin.question.edit(question.get, form.fill((question.get, Tables.questionAnswers(id)(db)))))
     else NotFound("Not FOund")
+  }
+
+  def a = Authenticated{ rs =>
+    Ok("asf")
   }
 
   def updateQuestion(id: Int) = Authenticated(parse.multipartFormData) { implicit rs =>

@@ -1,1 +1,7 @@
-GET         /           controllers.webservice.Application.index
+# WEBSERVICE Routes
+
+POST        /register        controllers.webservice.Application.register
+POST        /login           controllers.webservice.Application.login
+
+GET         /game            controllers.webservice.GameController.index
+

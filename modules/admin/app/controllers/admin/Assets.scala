@@ -1,6 +1,5 @@
 package controllers.admin
 
-/**
- * Created by Murat.
- */
-object Assets extends controllers.AssetsBuilder
+import play.api.http.LazyHttpErrorHandler
+
+object Assets extends controllers.AssetsBuilder(LazyHttpErrorHandler)

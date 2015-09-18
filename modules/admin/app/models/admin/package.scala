@@ -3,9 +3,12 @@ package models
 
 import play.api.libs.json.Json
 
-import scala.slick.driver.MySQLDriver.simple._
-import scala.slick.jdbc.JdbcBackend
-import scala.slick.lifted.{TableQuery, Tag}
+import slick.driver.MySQLDriver.api._
+import slick.jdbc.JdbcBackend
+import slick.lifted.{TableQuery, Tag}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 /**
  * Created by Murat.
@@ -18,9 +21,13 @@ package object admin {
     lazy val questions = TableQuery[QuestionTable]
     lazy val answers = TableQuery[AnswerTable]
 
-    def questionAnswers(qId: Int)(implicit session: JdbcBackend#Session) = answers.filter(_.quesId === qId).list
+    def questionAnswers(qId: Int)(implicit db: Database) =
+      Await.result(db.run(answers.filter(_.quesId === qId).result), 1.minute).toList
 
   }
+
+  implicit val catFormat = Json.format[Category]
+  implicit val quesFormat = Json.format[Question]
 
   case class User(id: Option[Int], username: String, password: String)
 
@@ -40,6 +47,12 @@ package object admin {
 
     override def * = (id, name) <> (Category.tupled, Category.unapply)
   }
+
+  implicit class CategoryExtensions[C[_]](q: Query[CategoryTable, Category, C]) {
+    // specify mapping of relationship to address
+    def withQuestions = q.joinLeft(Tables.questions).on(_.id === _.catId)
+  }
+
 
   case class Question(id: Option[Int], title: String, catId: Int, img: String){
     implicit val qFormat = Json.format[Question]

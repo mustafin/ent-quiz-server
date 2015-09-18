@@ -1,10 +1,15 @@
-import models.admin.{UserDAO, User}
-import org.specs2.mutable._
-import org.specs2.runner._
-import org.junit.runner._
+import models.admin.Tables
+import org.junit.runner.RunWith
+import org.specs2.mutable.Specification
+import org.specs2.runner.JUnitRunner
+import play.api.Play
+import play.api.db.slick.DatabaseConfigProvider
+import play.api.test.WithApplication
+import slick.driver.JdbcProfile
+import slick.lifted.SimpleFunction
+import play.api.libs.concurrent.Execution.Implicits._
 
-import play.api.test._
-import play.api.test.Helpers._
+import slick.driver.MySQLDriver.api._
 
 /**
  * Add your spec here.
@@ -16,22 +21,44 @@ class ApplicationSpec extends Specification {
 
   "Application" should {
 
-    "send 404 on a bad request" in new WithApplication{
-      route(FakeRequest(GET, "/boum")) must beNone
+//    "send 404 on a bad request" in new WithApplication{
+//      route(FakeRequest(GET, "/boum")) must beNone
+//    }
+//
+//
+//    "add user to database" in new WithApplication() {
+//      val user = new User(None, "admin", "12435")
+//      UserDAO.create(user)
+//    }
+
+//    "should generate token" in new WithApplication() {
+//      val token = Token.createToken(GameUser(Some(1), "murat", "", Some(1200)))
+//      println(token)
+//    }
+
+
+    "sasd" in new WithApplication() {
+
+      val dbConfig = DatabaseConfigProvider.get[JdbcProfile](Play.current)
+
+      val db = dbConfig.db
+      val rand = SimpleFunction.nullary[Double]("rand")
+      val categories = for{
+        (cat, ques) <- Tables.categories.sortBy(x => rand).take(3).withQuestions
+      }yield (cat, ques)
+
+      db.run(categories.result).foreach {
+        _ foreach {
+          case (x, y) => println(x, y)
+
+        }
+
+      }
+
+
     }
 
-    "render the index page" in new WithApplication{
-      val home = route(FakeRequest(GET, "/")).get
 
-      status(home) must equalTo(OK)
-      contentType(home) must beSome.which(_ == "text/html")
-      contentAsString(home) must contain ("Your new application is ready.")
-    }
-
-    "add user to database" in new WithApplication() {
-      val user = new User(None, "admin", "12435")
-      UserDAO.create(user)
-    }
 
   }
 }
