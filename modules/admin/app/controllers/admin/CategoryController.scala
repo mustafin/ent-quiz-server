@@ -26,7 +26,7 @@ class CategoryController  @Inject() (val messagesApi: MessagesApi) extends Contr
 
   val form = Form(
     mapping(
-      "id" -> ignored[Option[Int]](None),
+      "id" -> ignored[Option[Long]](None),
       "name" -> nonEmptyText
     )(Category.apply) (Category.unapply)
   )
@@ -47,14 +47,14 @@ class CategoryController  @Inject() (val messagesApi: MessagesApi) extends Contr
     )
   }
 
-  def edit(id: Int) = withAuth{ username => implicit rs =>
+  def edit(id: Long) = withAuth{ username => implicit rs =>
     val category = db.withSession { implicit session => categories.filter(_.id === id).firstOption }
     if(category.isDefined)
       Ok(views.html.admin.category.edit(category.get, form.fill(category.get)))
     else NotFound("Not FOund")
   }
 
-  def updateCategory(id: Int) = withAuth{ username => implicit rs =>
+  def updateCategory(id: Long) = withAuth{ username => implicit rs =>
     val category = form.bindFromRequest.get
     val categoryToUpdate: Category = category.copy(Some(id))
     db.withSession { implicit session => categories.filter(_.id === id).update(categoryToUpdate)}
@@ -62,7 +62,7 @@ class CategoryController  @Inject() (val messagesApi: MessagesApi) extends Contr
     Redirect(routes.CategoryController.list())
   }
 
-  def delete(id: Int) = withAuth{ username => implicit rs =>
+  def delete(id: Long) = withAuth{ username => implicit rs =>
     db.withSession { implicit session => categories.filter(_.id === id).delete}
     Redirect(routes.CategoryController.list())
   }

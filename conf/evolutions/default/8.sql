@@ -1,0 +1,9 @@
+# add scores to GAME table
+
+# --- !Ups
+
+ALTER TABLE `GAME`
+ADD COLUMN `SCORE_ONE` INT(2) NOT NULL DEFAULT 0,
+ADD COLUMN `SCORE_TWO` INT(2) NOT NULL DEFAULT 0;
+# --- !Downs
+

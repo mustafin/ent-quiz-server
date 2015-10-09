@@ -27,16 +27,16 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
 
   val form = Form(
     mapping(
-      "id" -> ignored[Option[Int]](None),
+      "id" -> ignored[Option[Long]](None),
       "title" -> text,
-      "catId" -> optional(number),
+      "catId" -> optional(longNumber),
       "img" -> optional(text),
       "answers" -> seq(
         mapping(
-          "id" -> optional(number),
+          "id" -> optional(longNumber),
           "title" -> text,
           "isTrue" -> boolean,
-          "quesId" -> optional(number),
+          "quesId" -> optional(longNumber),
           "img" -> optional(text)
         )({ case (a, b, c, d, e) => Answer(a, b, c, d.getOrElse(0), e.getOrElse("")) })
          ({ case (Answer(a, b, c, d, e)) => Option((a, b, c, Option(d), Option(e))) })
@@ -45,13 +45,13 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
      ({ case (Question(a, b, c, d), e) => Option((a, b, Option(c), Option(d), e)) })
   )
 
-  def list(catId: Int) = Authenticated { implicit rs =>
+  def list(catId: Long) = Authenticated { implicit rs =>
     val list = db withSession { implicit session => questions.filter(_.catId === catId).list }
 
     Ok(admin.question.list(form, list, catId))
   }
 
-  def add(newCatId: Int) = Authenticated(parse.multipartFormData) { implicit rs =>
+  def add(newCatId: Long) = Authenticated(parse.multipartFormData) { implicit rs =>
     form.bindFromRequest.fold(
       formWithErrors => {
         val catQuestions = db.withSession { implicit session => questions.filter(_.catId === newCatId).list }
@@ -81,7 +81,7 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
     )
   }
 
-  def edit(id: Int) = Authenticated { implicit rs =>
+  def edit(id: Long) = Authenticated { implicit rs =>
     val question = db.withSession { implicit session =>
       questions.filter(_.id === id).firstOption }
     if (question.isDefined)
@@ -93,7 +93,7 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
     Ok("asf")
   }
 
-  def updateQuestion(id: Int) = Authenticated(parse.multipartFormData) { implicit rs =>
+  def updateQuestion(id: Long) = Authenticated(parse.multipartFormData) { implicit rs =>
     form.bindFromRequest.fold(
       errorForm => {
         println(errorForm.errorsAsJson)
@@ -122,21 +122,21 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
     )
   }
 
-  def delete(id: Int) = Authenticated { implicit rs =>
+  def delete(id: Long) = Authenticated { implicit rs =>
     val q = questions.filter(_.id === id)
     val quest = db.withSession { implicit session => q.firstOption.get }
     db.withSession { implicit session => q.delete }
     Redirect(routes.QuestionController.list(quest.catId))
   }
 
-  def deleteAnswer(id: Int) = Authenticated { implicit rs =>
+  def deleteAnswer(id: Long) = Authenticated { implicit rs =>
     val a = answers.filter(_.id === id)
     val answer = db.withSession { implicit session => a.firstOption.get }
     db.withSession { implicit session => a.delete }
     Redirect(routes.QuestionController.edit(answer.quesId))
   }
 
-  def deleteImage(id: Int) = Authenticated { implicit rs =>
+  def deleteImage(id: Long) = Authenticated { implicit rs =>
     val q = for{ question <- questions if question.id === id} yield question.img
     db.withSession { implicit session =>
       q.firstOption foreach {

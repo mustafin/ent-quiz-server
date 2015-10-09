@@ -17,25 +17,25 @@ GET         /logout                               @controllers.admin.Auth.logout
 GET         /category/list                        @controllers.admin.CategoryController.list
 POST        /category/add                         @controllers.admin.CategoryController.add
 
-GET         /category/edit                        @controllers.admin.CategoryController.edit(id: Int)
-POST        /category/edit                        @controllers.admin.CategoryController.updateCategory(id: Int)
+GET         /category/edit                        @controllers.admin.CategoryController.edit(id: Long)
+POST        /category/edit                        @controllers.admin.CategoryController.updateCategory(id: Long)
 
-GET         /category/delete                      @controllers.admin.CategoryController.delete(id: Int)
+GET         /category/delete                      @controllers.admin.CategoryController.delete(id: Long)
 
 # QUESTION
-GET         /category/:catId/question/list        @controllers.admin.QuestionController.list(catId: Int)
-POST        /question/add/:catId                  @controllers.admin.QuestionController.add(catId: Int)
+GET         /category/:catId/question/list        @controllers.admin.QuestionController.list(catId: Long)
+POST        /question/add/:catId                  @controllers.admin.QuestionController.add(catId: Long)
 
-GET         /question/edit/:id                    @controllers.admin.QuestionController.edit(id: Int)
-POST        /question/edit                        @controllers.admin.QuestionController.updateQuestion(id: Int)
+GET         /question/edit/:id                    @controllers.admin.QuestionController.edit(id: Long)
+POST        /question/edit                        @controllers.admin.QuestionController.updateQuestion(id: Long)
 
-GET         /question/delete/:id                  @controllers.admin.QuestionController.delete(id: Int)
-GET         /question/delete-answer/:id           @controllers.admin.QuestionController.deleteAnswer(id: Int)
-GET         /question/delete-image/:id            @controllers.admin.QuestionController.deleteImage(id: Int)
+GET         /question/delete/:id                  @controllers.admin.QuestionController.delete(id: Long)
+GET         /question/delete-answer/:id           @controllers.admin.QuestionController.deleteAnswer(id: Long)
+GET         /question/delete-image/:id            @controllers.admin.QuestionController.deleteImage(id: Long)
 
 
 # Map static resources from the /public folder to the /assets URL path
-GET         /assets/*file                         controllers.admin.Assets.at(path="/public", file)
+GET         /assets/*file                         controllers.admin.Assets.at(path="/public/lib/myadmin", file)
 GET         /upload/*file                         controllers.admin.Uploads.at(file)
 
 

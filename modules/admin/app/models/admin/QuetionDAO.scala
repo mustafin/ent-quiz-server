@@ -15,16 +15,16 @@ object QuetionDAO {
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
   lazy val questions = Tables.questions
 
-  def list(catId: Int) = db.withSession { implicit session => questions.filter(_.catId === catId).list }
+  def list(catId: Long) = db.withSession { implicit session => questions.filter(_.catId === catId).list }
 
-  def create(catId: Int) = ???
+  def create(catId: Long) = ???
 
-  def update(id: Int) = ???
+  def update(id: Long) = ???
 
-  def delete(id: Int) = ???
+  def delete(id: Long) = ???
 
-  def deleteAnswer(id: Int) = ???
+  def deleteAnswer(id: Long) = ???
 
-  def deleteImage(id: Int) = ???
+  def deleteImage(id: Long) = ???
 
 }

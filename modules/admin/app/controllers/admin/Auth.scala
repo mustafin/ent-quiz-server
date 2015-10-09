@@ -19,7 +19,7 @@ class Auth @Inject() (val messagesApi: MessagesApi) extends Controller with I18n
 
   val loginForm = Form(
     mapping(
-      "id"       -> ignored[Option[Int]](None),
+      "id"       -> ignored[Option[Long]](None),
       "username" -> text,
       "password" -> text
     )(User.apply) (User.unapply)

@@ -5,18 +5,21 @@ import helpers.Token
 import models.webservice.{GameUserDAO, GameUser}
 import play.api.libs.json.Json
 import play.api.mvc._
+import play.api.libs.concurrent.Execution.Implicits._
+
+import scala.concurrent.Future
 
 /**
  * Created by Murat.
  */
 trait ServiceAuth {
 
-  case class ServiceAuthRequest[A](
-                                      user: GameUser, request: Request[A]
+  case class ServiceAuthRequest[+A](
+                                      user: Option[GameUser], request: Request[A]
                                       ) extends WrappedRequest(request)
 
-  def Authenticated[A](p: BodyParser[A])(f: ServiceAuthRequest[A] => Result) = {
-    Action(p) { request =>
+  object Authenticated extends ActionBuilder[ServiceAuthRequest]{
+    override def invokeBlock[A](request: Request[A], block: (ServiceAuthRequest[A]) => Future[Result]): Future[Result] = {
       val user = request.headers.get("Authorization").map(
         st => st.split(" ") match {
           case Array(a, b) if a == "Bearer" =>
@@ -25,18 +28,12 @@ trait ServiceAuth {
         }
       )
       val p = user match {
-        case Some(Some(u)) =>
-          Some(f(ServiceAuthRequest(u, request)))
+        case Some(u)   =>
+          Some(block(ServiceAuthRequest(u, request)))
         case _ => None
       }
-      p.getOrElse(Results.Unauthorized(Json.obj("error" -> "unauthorized")))
+      p.getOrElse(Future(Results.Unauthorized(Json.obj("error" -> "unauthorized"))))
     }
   }
-
-  import play.api.mvc.BodyParsers._
-  def Authenticated(f: ServiceAuthRequest[AnyContent] => Result): Action[AnyContent]  = {
-    Authenticated(parse.anyContent)(f)
-  }
-
 
 }

@@ -20,6 +20,10 @@ object UserDAO{
     Tables.users.filter(_.username === username).firstOption
   }
 
+  def find(id: Option[Long]) = db withSession {implicit session =>
+    Tables.users.filter(_.id === id).firstOption
+  }
+
   def create(user: User) = db withSession{ implicit session =>
     val userToInsert = user.copy(password = encryptPassword(user.password))
     (Tables.users += userToInsert).run

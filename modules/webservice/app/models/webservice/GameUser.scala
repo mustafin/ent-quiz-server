@@ -48,6 +48,10 @@ object GameUserDAO{
     ServiceTables.users.filter(_.username === username).firstOption
   }
 
+  def find(id: Option[Long]) = db withSession {implicit session =>
+    ServiceTables.users.filter(_.id === id).firstOption
+  }
+
   def checkCredentials(username: String, password: String): Boolean = db withSession {
     implicit session =>
       val encrypted = UserDAO.encryptPassword(password)

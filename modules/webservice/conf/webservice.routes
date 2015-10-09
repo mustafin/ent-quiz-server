@@ -4,4 +4,7 @@ POST        /register        controllers.webservice.Application.register
 POST        /login           controllers.webservice.Application.login
 
 GET         /game            controllers.webservice.GameController.index
+POST         /test            controllers.webservice.GameController.test
+GET         /start            controllers.webservice.GameController.start
+POST         /submitRound    controllers.webservice.GameController.submitRound
 

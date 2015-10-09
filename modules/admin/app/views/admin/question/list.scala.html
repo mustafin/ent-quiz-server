@@ -4,7 +4,7 @@
 @import views.html.admin.{templates, partials}
 
 
-@(quesForm: Form[Tuple2[Question, Seq[Answer]]], questions: List[Question], catId: Int)(implicit messages: Messages)
+@(quesForm: Form[Tuple2[Question, Seq[Answer]]], questions: List[Question], catId: Long)(implicit messages: Messages)
 
 
 @templates.main(Messages("label.questions")){

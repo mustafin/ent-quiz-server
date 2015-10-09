@@ -29,7 +29,6 @@ object Application extends Controller{
       (JsPath \ "password").read[String]
     ).tupled
 
-
   def register = Action(parse.json){ request =>
     request.body.validate[(String, String)].map{
       case (username: String, password: String) =>
@@ -37,7 +36,7 @@ object Application extends Controller{
         GameUserDAO.register(user)
         Ok(Json.obj("success" -> 1))
     }.recoverTotal{
-      e => BadRequest(JsError.toFlatJson(e))
+      e => BadRequest(JsError.toJson(e))
     }
   }
 
@@ -49,15 +48,13 @@ object Application extends Controller{
         if(exist) {
           val user = GameUserDAO.findByName(username)
           val token = Token.createToken(user.get)
-          Ok(Json.obj("success" -> 1, "token" -> token))
+          Ok(Json.obj("success" -> 1, "token" -> token, "userId" -> user.get.id))
         }else {
           Unauthorized(Json.obj("error" -> "wrong username or password"))
         }
     }.recoverTotal{
-      e => BadRequest(JsError.toFlatJson(e))
+      e => BadRequest(JsError.toJson(e))
     }
   }
-
-
 
 }

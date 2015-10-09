@@ -17,8 +17,8 @@ object Token {
     JWT.encode(key, payload.as[JsObject])
   }
 
-  def decodeToken(string: String): JsObject ={
-    val res = JWT.decode(string, Some(key)).asInstanceOf[JWTResult.JWT]
+  def decodeToken(token: String): JsObject ={
+    val res = JWT.decode(token, Some(key)).asInstanceOf[JWTResult.JWT]
     res.payload
   }
 

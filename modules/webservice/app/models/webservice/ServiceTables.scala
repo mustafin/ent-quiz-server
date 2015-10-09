@@ -8,4 +8,6 @@ object ServiceTables {
 
   lazy val users = TableQuery[GameUserTable]
   lazy val games = TableQuery[GameTable]
+  lazy val rounds = TableQuery[RoundTable]
+
 }
