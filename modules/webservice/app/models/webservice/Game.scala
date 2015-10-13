@@ -2,7 +2,6 @@ package models.webservice
 
 import java.sql.Timestamp
 import models.admin._
-import models.webservice.gameobjects.{GameData, GameCategory, GameQuestion}
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json._
@@ -23,7 +22,17 @@ import play.api.libs.concurrent.Execution.Implicits._
  * Created by Murat.
  */
 
-case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long], createdAt: Option[Timestamp], scoreOne: Int = 0, scoreTwo: Int = 0)
+case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long], createdAt: Option[Timestamp], scoreOne: Int = 0, scoreTwo: Int = 0){
+  def toGameData(user: GameUser) = {
+    val userTwo = user.id match{
+      case this.userOneId => GameUserDAO.find(this.userTwoId)
+      case this.userTwoId => GameUserDAO.find(this.userOneId)
+      case _ => None
+    }
+
+    GameData(this.id, Some(user), userTwo, this.scoreOne, this.scoreTwo)
+  }
+}
 
 class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
 
@@ -55,14 +64,14 @@ object GameDAO{
   def newGame(user: GameUser): Future[Game] = {
     val gameRes = db.run(ServiceTables.games.
       filter(x => x.userTwoId.isEmpty && x.userOneId =!= user.id).result.headOption)
-    gameRes.map {
+    gameRes.flatMap {
       x => {
         val game = x match {
           case Some(g) => g.copy(userTwoId = user.id)
           case None => Game(None, user.id, None, Some(new Timestamp(new java.util.Date().getTime)))
         }
-        db.run(ServiceTables.games.insertOrUpdate(game))
-        game
+        db.run((ServiceTables.games returning ServiceTables.games.map(_.id)
+            into ((user,id) => user.copy(id = id))).insertOrUpdate(game)).map(_.get)
       }
     }
   }
@@ -124,7 +133,9 @@ object GameDAO{
     implicit val quesFormat = Json.format[Question]
     implicit val gameQuesFormat = Json.format[GameQuestion]
     implicit val catFormat = Json.format[Category]
+    implicit val gameUserFormat = GameUserDAO.GameUserFormat
     implicit val gameCatFormat = Json.format[GameCategory]
+    implicit val gameDataFormat = Json.format[GameData]
 
     val rds: Reads[Timestamp] = (__ \ "timestamp").read[Long].map{ long => new Timestamp(long) }
     val wrs: Writes[Timestamp] = (__ \ "timestamp").write[Long].contramap{ (a: Timestamp) => a.getTime }

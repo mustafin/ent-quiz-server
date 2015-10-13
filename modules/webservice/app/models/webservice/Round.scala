@@ -66,11 +66,11 @@ object RoundDAO{
     db.run(ServiceTables.rounds.insertOrUpdate(round)).map(_ => ())
   }
 
-  def roundNum(gameId: Option[Int]): Future[Int] = {
+  def roundNum(gameId: Option[Long]): Future[Int] = {
     db.run(ServiceTables.rounds.filter(_.gameId === gameId).length.result)
   }
 
-  def lastRound(gameId: Option[Int]): Future[Option[Round]] = {
+  def lastRound(gameId: Option[Long]): Future[Option[Round]] = {
     db.run(ServiceTables.rounds.filter(_.gameId === gameId).result.headOption)
   }
 

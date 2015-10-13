@@ -49,7 +49,9 @@ object GameUserDAO{
   }
 
   def find(id: Option[Long]) = db withSession {implicit session =>
-    ServiceTables.users.filter(_.id === id).firstOption
+    if(id.isDefined)
+      ServiceTables.users.filter(_.id === id).firstOption
+    else None
   }
 
   def checkCredentials(username: String, password: String): Boolean = db withSession {

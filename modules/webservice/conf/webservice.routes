@@ -7,4 +7,5 @@ GET         /game            controllers.webservice.GameController.index
 POST         /test            controllers.webservice.GameController.test
 GET         /start            controllers.webservice.GameController.start
 POST         /submitRound    controllers.webservice.GameController.submitRound
+GET         /getRoundData/:gameId    controllers.webservice.GameController.getRoundData(gameId: Long)
 
