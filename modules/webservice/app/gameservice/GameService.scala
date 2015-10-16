@@ -5,35 +5,39 @@ import models.webservice._
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import scala.util.Try
 
 /**
  * Created by Murat.
  * Game Service Logic
  */
 object GameService {
-  
+
   def startGame(user: GameUser): Future[GameData] = GameDAO.newGame(user).map(_.toGameData(user))
 
+  def getRoundData(user: GameUser, gameId: Option[Long]): Future[Seq[GameCategory]] = {
 
-  def getRoundData(reply: Boolean, user: GameUser, gameId: Option[Long]): Future[Option[Seq[GameCategory]]] ={
+    val count = RoundDAO.roundNum(gameId)
+    val lastRound = RoundDAO.lastRound(gameId)
 
-    val roundNum = RoundDAO.roundNum(gameId)
-
-    if(!reply){
-      GameDAO.moveData().map(Some(_)) // firstMove {3 cat to choose}
-    }else{
-      RoundDAO.lastRound(gameId).flatMap(
-        round =>
-          if(round.isDefined)
-            GameDAO.moveData(round.flatMap(_.categoryId)).map(Some(_)) // replyMove {1 cat}
-          else Future.successful(None)
+    lastRound.flatMap( round =>
+      count.flatMap( c =>
+        if (round.isDefined && round.get.opponentMove(c))
+          GameDAO.moveData(gameId, round) // replyMove {1 cat}
+        else{
+          val g = GameDAO.moveData(gameId, round) // replyMove {3 cat}
+          RoundDAO.newRound(gameId)
+          g
+        }
       )
-    }
+    )
 
   }
 
-  def submitRound() = ???
+  def submitRound(gameRound: GameRound, user: GameUser) =
+    GameDAO.find(gameRound.gameId).map {
+      _ foreach (RoundDAO.submitRound(gameRound, _, user.id))
+    }
 
   def updateStatus() = ???
 

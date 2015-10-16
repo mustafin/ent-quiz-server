@@ -22,7 +22,8 @@ import play.api.libs.concurrent.Execution.Implicits._
  * Created by Murat.
  */
 
-case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long], createdAt: Option[Timestamp], scoreOne: Int = 0, scoreTwo: Int = 0){
+case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long],
+                createdAt: Option[Timestamp], scoreOne: Int = 0, scoreTwo: Int = 0){
   def toGameData(user: GameUser) = {
     val userTwo = user.id match{
       case this.userOneId => GameUserDAO.find(this.userTwoId)
@@ -32,6 +33,17 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
 
     GameData(this.id, Some(user), userTwo, this.scoreOne, this.scoreTwo)
   }
+
+  def isReply(roundNum: Int, userId: Long): Boolean = {
+    if(userOneId.isDefined || userTwoId.isDefined)
+      if(roundNum % 2 == 0){
+        userId == userOneId.get
+      }else{
+        userId == userTwoId.get
+      }
+    else false
+  }
+
 }
 
 class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
@@ -50,9 +62,6 @@ class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
 
 }
 
-
-
-
 object GameObject{
 //  def apply()
 }
@@ -65,14 +74,13 @@ object GameDAO{
     val gameRes = db.run(ServiceTables.games.
       filter(x => x.userTwoId.isEmpty && x.userOneId =!= user.id).result.headOption)
     gameRes.flatMap {
-      x => {
-        val game = x match {
-          case Some(g) => g.copy(userTwoId = user.id)
-          case None => Game(None, user.id, None, Some(new Timestamp(new java.util.Date().getTime)))
-        }
+      case Some(g) =>
+        db.run(ServiceTables.games.filter(_.id === g.id).map(_.userTwoId).update(user.id))
+        Future.successful(g.copy(userTwoId = user.id))
+      case None =>
+        val game = Game(None, user.id, None, Some(new Timestamp(new java.util.Date().getTime)))
         db.run((ServiceTables.games returning ServiceTables.games.map(_.id)
-            into ((user,id) => user.copy(id = id))).insertOrUpdate(game)).map(_.get)
-      }
+          into ((user,id) => user.copy(id = id))) += game)
     }
   }
 
@@ -83,25 +91,34 @@ object GameDAO{
   /**
    * Returns Categories, questions with answers
    *
-   * @param catId If catId exist, then it is opponent move
+   * @param round If round exist, then it is opponent move
    * @return Future<Seq<GameCategory>>
    */
-  def moveData(catId: Option[Long] = None): Future[Seq[GameCategory]] = {
+  def moveData(gameId: Option[Long], round: Option[Round]): Future[Seq[GameCategory]] = {
+
+    if(round.isDefined && round.get.empty)return Future.successful(Nil)
 
     val rand = SimpleFunction.nullary[Double]("rand")
 
-    val categ = catId match {
+    val categ = round.flatMap(_.categoryId) match {
       case Some(n) => Tables.categories.filter(_.id === n)
-      case None => Tables.categories.sortBy(x => rand).take(3)
+      case None =>
+        val playedCats = ServiceTables.rounds.filter(_.gameId === gameId).map(_.categoryId)
+        Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
     }
 
     val categoriesFut = db.run(categ.result)
 
     val quesAndAnswersFut = categoriesFut.flatMap(
       listOfCat => {
-        val results = for (category <- listOfCat) yield {
-          val query = Tables.questions.filter(_.catId === category.id).sortBy(r => rand).take(3).withAnswers
-          db.run(query.result)
+        val results =
+          if(listOfCat.length == 1)
+          Seq(db.run(Tables.questions.filter(_.id inSet round.get.questions).withAnswers.result))
+        else{
+          for (category <- listOfCat) yield {
+            val query = Tables.questions.filter(_.catId === category.id).sortBy(r => rand).take(3).withAnswers
+            db.run(query.result)
+          }
         }
         Future.sequence(results)
       }
@@ -114,18 +131,17 @@ object GameDAO{
       categories.map(
         x => {
           //converting List[Tuple3] to List[k -> (k -> v)]
-          val gameQuestions = items.filter(_._1.catId == x.id.get)
-                                .groupBy(_._1)
-                                .mapValues(_.map(_._2))
+          val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
           .map{
-            case (qes, ans) => GameQuestion(qes, ans.flatten, None) //TODO add answered id HERE
-          }.toSeq
+            case (qes, ans) => GameQuestion(qes, ans.flatten, round.flatMap(_.playerAnswers(qes.id)))
+          }.toVector
           GameCategory(x, gameQuestions)
         }
       )
     }
 
   }
+
 
   object Implicits{
 
@@ -136,6 +152,7 @@ object GameDAO{
     implicit val gameUserFormat = GameUserDAO.GameUserFormat
     implicit val gameCatFormat = Json.format[GameCategory]
     implicit val gameDataFormat = Json.format[GameData]
+    implicit val gmeRound = Json.format[GameRound]
 
     val rds: Reads[Timestamp] = (__ \ "timestamp").read[Long].map{ long => new Timestamp(long) }
     val wrs: Writes[Timestamp] = (__ \ "timestamp").write[Long].contramap{ (a: Timestamp) => a.getTime }

@@ -15,59 +15,56 @@ import models.webservice.RoundDAO.Implicits._
 
 import scala.concurrent.Future
 import scala.slick.driver.MySQLDriver.simple._
+import scala.util.{Failure, Success}
 
 /**
  * Created by Murat.
  */
-object GameController extends Controller with ServiceAuth{
+object GameController extends Controller with ServiceAuth {
 
   lazy val games = TableQuery[GameTable]
   lazy val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
-  def index: Action[JsValue] = Authenticated(parse.json){ req =>
+  def index: Action[JsValue] = Authenticated(parse.json) { req =>
     Ok(Json.obj("asd" -> "asf"))
   }
 
-  def start = Authenticated.async{ req =>
-    for{
+  def start = Authenticated.async { req =>
+    for {
       game <- GameService.startGame(req.user)
-      cat <- GameService.getRoundData(game.opponentStart, req.user, game.gameId)
-    }yield {
+      cat <- GameService.getRoundData(req.user, game.gameId)
+    } yield {
       Ok(Json.toJson(game).as[JsObject] + ("data" -> Json.toJson(cat)))
     }
   }
 
-  //{"game":"2","round":"1","cat":"3","questions":[{"qid":"1","aid":"2"},{"qid":"5","aid":"3"},{"qid":"2","aid":"1"}]}
-  def submitRound = Authenticated.async(parse.json){ req =>
-    req.request.body.validate[Round].map{
-      case round: Round =>
-        RoundDAO.add(round)
-        val catFuture: Future[JsValue] = GameDAO.moveData().map(Json.toJson(_))
-        catFuture.map(x => Ok(Json.obj("data" -> x)))
+  def submitRound = Authenticated(parse.json) { req =>
+    req.request.body.validate[GameRound].map {
+      case round: GameRound =>
+        GameService.submitRound(round, req.user)
+        Ok(Json.obj("success" -> 1))
     }.recoverTotal(
-      e => Future.successful(BadRequest(Json.obj("error" -> "Wrong format")))
+      e => BadRequest(Json.obj("error" -> "wrong request body format"))
     )
   }
 
-  def test = Action.async{ req =>
-    val game = GameDAO.moveData()
-    game.map(
-      x =>
-        Ok(Json.toJson(x))
-    )
-
-  }
-
-  def getRoundData(id: Long) = Authenticated.async(parse.json){ case AuthReq(user, req) =>
+  def getRoundData(id: Long) = Authenticated.async { authReq =>
     val game = GameDAO.find(Some(id))
-    game.map{
+
+    game.flatMap {
       case Some(g) =>
-          val game = g.toGameData(user)
-          Ok(Json.toJson(GameService.getRoundData(game.opponentStart, user, game.gameId)))
+        val game = g.toGameData(authReq.user)
+        val data = GameService.getRoundData(authReq.user, game.gameId)
+        data.map(x => Ok(Json.toJson(game).as[JsObject] + ("data" -> Json.toJson(x))))
       case None =>
-          BadRequest(Json.obj("error" -> "Wrong game id"))
+        Future.successful(BadRequest(Json.obj("error" -> "Wrong game id")))
     }
 
   }
 
+  //  implicit def conv(stat: Result): Future[Result] = Future.successful(stat)
+
+
 }
+
+

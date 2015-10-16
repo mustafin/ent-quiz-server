@@ -22,8 +22,21 @@ case class Round(id: Option[Long], gameId: Option[Long], categoryId: Option[Long
   def finished = uoneAnsOneId.isDefined && uoneAnsTwoId.isDefined && uoneAnsThreeId.isDefined &&
                  utwoAnsOneId.isDefined && utwoAnsTwoId.isDefined && utwoAnsThreeId.isDefined
 
-}
+  def empty = uoneAnsOneId.isEmpty && uoneAnsTwoId.isEmpty && uoneAnsThreeId.isEmpty &&
+    utwoAnsOneId.isEmpty && utwoAnsTwoId.isEmpty && utwoAnsThreeId.isDefined
 
+  def playerAnswers = Map(quesOneId -> uoneAnsOneId, quesTwoId -> uoneAnsTwoId, quesThreeId -> uoneAnsThreeId)
+
+  def opponentAnswers = Map(quesOneId -> utwoAnsOneId, quesTwoId -> utwoAnsTwoId, quesThreeId -> utwoAnsThreeId)
+
+  def questions = Set(quesOneId, quesTwoId, quesThreeId).flatten
+
+  def opponentMove(count: Int):Boolean = {
+    if(count % 2 == 0) !finished
+    else finished
+  }
+
+}
 
 class RoundTable(tag: Tag) extends Table[Round](tag, "ROUND"){
 
@@ -62,8 +75,8 @@ class RoundTable(tag: Tag) extends Table[Round](tag, "ROUND"){
 object RoundDAO{
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
-  def add(round: Round): Future[Unit] ={
-    db.run(ServiceTables.rounds.insertOrUpdate(round)).map(_ => ())
+  def add(round: Round): Unit ={
+    db.run(ServiceTables.rounds.insertOrUpdate(round))
   }
 
   def roundNum(gameId: Option[Long]): Future[Int] = {
@@ -74,6 +87,34 @@ object RoundDAO{
     db.run(ServiceTables.rounds.filter(_.gameId === gameId).result.headOption)
   }
 
+  def newRound(gameId: Option[Long]): Unit ={
+    val round = Round(None, gameId, None, None, None, None, None, None, None, None, None, None)
+    db.run(ServiceTables.rounds += round)
+  }
+
+  def submitRound(gr: GameRound, game: Game, userId: Option[Long]): Unit ={
+
+    for (u1id <- game.userOneId; u2id <- game.userTwoId; uId <- userId) {
+      val query = ServiceTables.rounds.filter(g => g.gameId === gr.gameId).sortBy(_.id.desc).take(1)
+      if (u1id == uId) {
+        val updateQ = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
+          r.uoneAnsOneId, r.uoneAnsTwoId, r.uoneAnsThreeId))
+        println(query.result.statements)
+        println(updateQ.updateStatement)
+        db.run(updateQ.update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))).onFailure{
+          case e => println(e)
+        }
+
+      } else if (u2id == uId) {
+        val update = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
+          r.utwoAnsOneId, r.utwoAnsTwoId, r.utwoAnsThreeId))
+          .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
+
+        db.run(update)
+
+      }
+    }
+  }
 
   object Implicits{
     implicit val roundFormat = Json.format[Round]
