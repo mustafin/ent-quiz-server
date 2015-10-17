@@ -12,7 +12,7 @@ case class GameData(gameId: Option[Long], user: Option[GameUser], opponent: Opti
   def opponentStart = opponent.isDefined
 }
 
-case class GameRound(gameId: Option[Long], roundNum: Option[Int], catId: Option[Long],
+case class GameRound(roundId: Option[Long], gameId: Option[Long], roundNum: Option[Int], catId: Option[Long],
                      q1Id: Option[Long], q2Id: Option[Long], q3Id: Option[Long],
                      a1Id: Option[Long], a2Id: Option[Long], a3Id: Option[Long])
 

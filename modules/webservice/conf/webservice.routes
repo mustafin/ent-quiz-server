@@ -3,8 +3,9 @@
 POST        /register        controllers.webservice.Application.register
 POST        /login           controllers.webservice.Application.login
 
-GET         /game            controllers.webservice.GameController.index
-GET         /start            controllers.webservice.GameController.start
-POST         /submitRound    controllers.webservice.GameController.submitRound
-GET         /getRoundData/:gameId    controllers.webservice.GameController.getRoundData(gameId: Long)
+GET         /clearGames              controllers.webservice.GameController.clearGames
+GET         /game                   controllers.webservice.GameController.index
+GET         /start                  controllers.webservice.GameController.start
+POST         /submitRound           controllers.webservice.GameController.submitRound
+GET         /getRoundData/:gameId   controllers.webservice.GameController.getRoundData(gameId: Long)
 

@@ -70,6 +70,10 @@ object GameDAO{
 
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
+  def tempClear = {
+    db.run(ServiceTables.games.delete)
+  }
+
   def newGame(user: GameUser): Future[Game] = {
     val gameRes = db.run(ServiceTables.games.
       filter(x => x.userTwoId.isEmpty && x.userOneId =!= user.id).result.headOption)

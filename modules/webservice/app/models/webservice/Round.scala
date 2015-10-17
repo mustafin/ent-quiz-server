@@ -10,6 +10,7 @@ import slick.lifted.{TableQuery, Tag}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import util.Extensions._
 
 /**
  * Created by Murat.
@@ -31,9 +32,9 @@ case class Round(id: Option[Long], gameId: Option[Long], categoryId: Option[Long
 
   def questions = Set(quesOneId, quesTwoId, quesThreeId).flatten
 
-  def opponentMove(count: Int):Boolean = {
-    if(count % 2 == 0) !finished
-    else finished
+  def replyMove(count: Int):Boolean = {
+    if(count % 2 == 0) finished
+    else !finished
   }
 
 }
@@ -87,33 +88,28 @@ object RoundDAO{
     db.run(ServiceTables.rounds.filter(_.gameId === gameId).result.headOption)
   }
 
-  def newRound(gameId: Option[Long]): Unit ={
+  def newRound(gameId: Option[Long]): Future[Round] ={
     val round = Round(None, gameId, None, None, None, None, None, None, None, None, None, None)
-    db.run(ServiceTables.rounds += round)
+    db.run(ServiceTables.rounds returning ServiceTables.rounds.map(_.id)
+      into ((user,id) => user.copy(id = id)) += round)
   }
 
   def submitRound(gr: GameRound, game: Game, userId: Option[Long]): Unit ={
 
-    for (u1id <- game.userOneId; u2id <- game.userTwoId; uId <- userId) {
-      val query = ServiceTables.rounds.filter(g => g.gameId === gr.gameId).sortBy(_.id.desc).take(1)
-      if (u1id == uId) {
+      val query = ServiceTables.rounds.filter(g => g.gameId === gr.gameId && g.id === gr.roundId)
+      if (userId === game.userOneId) {
         val updateQ = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
           r.uoneAnsOneId, r.uoneAnsTwoId, r.uoneAnsThreeId))
-        println(query.result.statements)
-        println(updateQ.updateStatement)
-        db.run(updateQ.update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))).onFailure{
-          case e => println(e)
-        }
+          .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
 
-      } else if (u2id == uId) {
+        db.run(updateQ)
+      } else if (userId === game.userTwoId) {
         val update = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
           r.utwoAnsOneId, r.utwoAnsTwoId, r.utwoAnsThreeId))
           .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
-
         db.run(update)
 
       }
-    }
   }
 
   object Implicits{

@@ -15,19 +15,18 @@ object GameService {
 
   def startGame(user: GameUser): Future[GameData] = GameDAO.newGame(user).map(_.toGameData(user))
 
-  def getRoundData(user: GameUser, gameId: Option[Long]): Future[Seq[GameCategory]] = {
+  def getRoundData(user: GameUser, gameId: Option[Long]): Future[(Option[Long], Seq[GameCategory])] = {
 
     val count = RoundDAO.roundNum(gameId)
     val lastRound = RoundDAO.lastRound(gameId)
-
     lastRound.flatMap( round =>
       count.flatMap( c =>
-        if (round.isDefined && round.get.opponentMove(c))
-          GameDAO.moveData(gameId, round) // replyMove {1 cat}
+        if (round.isDefined && round.get.replyMove(c))
+          GameDAO.moveData(gameId, round).map(round.get.id -> _) // replyMove {1 cat}
         else{
           val g = GameDAO.moveData(gameId, round) // replyMove {3 cat}
-          RoundDAO.newRound(gameId)
-          g
+          val r = RoundDAO.newRound(gameId)
+          g.zip(r).map{case (gameCat, roundCur) => roundCur.id -> gameCat }
         }
       )
     )

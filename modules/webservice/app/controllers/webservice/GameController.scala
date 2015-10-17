@@ -32,9 +32,9 @@ object GameController extends Controller with ServiceAuth {
   def start = Authenticated.async { req =>
     for {
       game <- GameService.startGame(req.user)
-      cat <- GameService.getRoundData(req.user, game.gameId)
+      (rId, cat) <- GameService.getRoundData(req.user, game.gameId)
     } yield {
-      Ok(Json.toJson(game).as[JsObject] + ("data" -> Json.toJson(cat)))
+      Ok(Json.toJson(game).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(cat)))
     }
   }
 
@@ -55,9 +55,19 @@ object GameController extends Controller with ServiceAuth {
       case Some(g) =>
         val game = g.toGameData(authReq.user)
         val data = GameService.getRoundData(authReq.user, game.gameId)
-        data.map(x => Ok(Json.toJson(game).as[JsObject] + ("data" -> Json.toJson(x))))
+        data.map{ case (rId, d) =>
+          Ok(Json.toJson(game).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(d)))}
       case None =>
         Future.successful(BadRequest(Json.obj("error" -> "Wrong game id")))
+    }
+
+  }
+
+  def clearGames = Action.async{
+    GameDAO.tempClear.map{
+      x => Ok("games cleared")
+    }.recover{
+      case e => BadRequest(e.getMessage)
     }
 
   }
