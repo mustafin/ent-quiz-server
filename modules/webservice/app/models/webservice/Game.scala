@@ -1,6 +1,7 @@
 package models.webservice
 
 import java.sql.Timestamp
+import _root_.util.Extensions._
 import models.admin._
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
@@ -14,6 +15,7 @@ import play.api.libs.json.Reads._
 
 import scala.concurrent.Future
 
+
 // Custom validation helpers
 import play.api.libs.functional.syntax._ // Combinator syntax
 import play.api.libs.concurrent.Execution.Implicits._
@@ -23,7 +25,7 @@ import play.api.libs.concurrent.Execution.Implicits._
  */
 
 case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long],
-                createdAt: Option[Timestamp], scoreOne: Int = 0, scoreTwo: Int = 0){
+                createdAt: Option[Timestamp], userOneMove: Boolean = true, scoreOne: Int = 0, scoreTwo: Int = 0){
   def toGameData(user: GameUser) = {
     val userTwo = user.id match{
       case this.userOneId => GameUserDAO.find(this.userTwoId)
@@ -44,6 +46,15 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
     else false
   }
 
+
+  def myMove(user: GameUser): Boolean ={
+    if(user.id === userOneId){
+      userOneMove
+    }else if(user.id === userTwoId){
+      !userOneMove
+    }else false
+  }
+
 }
 
 class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
@@ -52,10 +63,11 @@ class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
   def userOneId = column[Option[Long]]("USER_ONE")
   def userTwoId = column[Option[Long]]("USER_TWO")
   def createdAt = column[Option[Timestamp]]("CREATED_AT")
+  def userOneMove = column[Boolean]("USER_ONE_MOVE")
   def scoreOne = column[Int]("SCORE_ONE")
   def scoreTwo = column[Int]("SCORE_TWO")
 
-  override def * = (id, userOneId, userTwoId, createdAt, scoreOne, scoreTwo) <> (Game.tupled, Game.unapply)
+  override def * = (id, userOneId, userTwoId, createdAt, userOneMove, scoreOne, scoreTwo) <> (Game.tupled, Game.unapply)
 
   def userOne = foreignKey("USER_ONE_FK", userOneId, TableQuery[GameUserTable])(_.id.get, onDelete=ForeignKeyAction.Cascade)
   def userTwo = foreignKey("USER_TWO_FK", userTwoId, TableQuery[GameUserTable])(_.id.get, onDelete=ForeignKeyAction.Cascade)
@@ -92,23 +104,36 @@ object GameDAO{
     db.run(ServiceTables.games.filter(_.id === id).result.headOption)
   }
 
+  def toggleMove(game: Game): Unit ={
+    val changeMove = ServiceTables.games.filter(_.id === game.id).map(_.userOneMove)
+    db.run(changeMove.update(!game.userOneMove))
+  }
+
+
   /**
    * Returns Categories, questions with answers
    *
    * @param round If round exist, then it is opponent move
    * @return Future<Seq<GameCategory>>
    */
-  def moveData(gameId: Option[Long], round: Option[Round]): Future[Seq[GameCategory]] = {
+  def moveData(game: Game, round: Option[Round], reply: Boolean): Future[Seq[GameCategory]] = {
 
     if(round.isDefined && round.get.empty)return Future.successful(Nil)
 
     val rand = SimpleFunction.nullary[Double]("rand")
 
-    val categ = round.flatMap(_.categoryId) match {
-      case Some(n) => Tables.categories.filter(_.id === n)
-      case None =>
-        val playedCats = ServiceTables.rounds.filter(_.gameId === gameId).map(_.categoryId)
-        Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
+//    val categ = round.flatMap(_.categoryId) match {
+//      case Some(n) => Tables.categories.filter(_.id === n)
+//      case None =>
+//        val playedCats = ServiceTables.rounds.filter(_.gameId === gameId).map(_.categoryId)
+//        Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
+//    }
+
+    val categ = if(reply){
+      Tables.categories.filter(_.id === round.get.categoryId)
+    }else {
+      val playedCats = ServiceTables.rounds.filter(_.gameId === game.id).map(_.categoryId)
+      Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
     }
 
     val categoriesFut = db.run(categ.result)
@@ -137,7 +162,7 @@ object GameDAO{
           //converting List[Tuple3] to List[k -> (k -> v)]
           val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
           .map{
-            case (qes, ans) => GameQuestion(qes, ans.flatten, round.flatMap(_.playerAnswers(qes.id)))
+            case (qes, ans) => GameQuestion(qes, ans.flatten, round.flatMap(_.userAnswers(game)(qes.id)))
           }.toVector
           GameCategory(x, gameQuestions)
         }

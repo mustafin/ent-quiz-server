@@ -13,24 +13,23 @@ import scala.util.Try
  */
 object GameService {
 
-  def startGame(user: GameUser): Future[GameData] = GameDAO.newGame(user).map(_.toGameData(user))
+  def startGame(user: GameUser) = GameDAO.newGame(user)
 
-  def getRoundData(user: GameUser, gameId: Option[Long]): Future[(Option[Long], Seq[GameCategory])] = {
+  def getRoundData(user: GameUser, game: Game): Future[(Option[Long], Seq[GameCategory])] = {
 
-    val count = RoundDAO.roundNum(gameId)
-    val lastRound = RoundDAO.lastRound(gameId)
-    lastRound.flatMap( round =>
-      count.flatMap( c =>
-        if (round.isDefined && round.get.replyMove(c))
-          GameDAO.moveData(gameId, round).map(round.get.id -> _) // replyMove {1 cat}
-        else{
-          val g = GameDAO.moveData(gameId, round) // replyMove {3 cat}
-          val r = RoundDAO.newRound(gameId)
-          g.zip(r).map{case (gameCat, roundCur) => roundCur.id -> gameCat }
-        }
+    val lastRound = RoundDAO.lastRound(game.id)
+      lastRound.flatMap( round =>
+        if(game.myMove(user))
+          if (round.isDefined && !round.get.finished)
+            GameDAO.moveData(game, round, reply = true).map(round.get.id -> _) // replyMove {1 cat}
+          else{
+            val g = GameDAO.moveData(game, round, reply = false) // replyMove {3 cat}
+            val r = RoundDAO.newRound(game.id)
+            g.zip(r).map{case (gameCat, roundCur) => roundCur.id -> gameCat }
+          }
+        else
+          Future.successful((round.flatMap(_.id), Nil))
       )
-    )
-
   }
 
   def submitRound(gameRound: GameRound, user: GameUser) =
