@@ -1,16 +1,15 @@
 package gameservice
 
-
 import models.webservice._
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.concurrent.Future
 
 /**
  * Created by Murat.
  * Game Service Logic
  */
+@Deprecated("Use GameServiceTrait and GameServiceImpl")
 object GameService {
 
   def startGame(user: GameUser) = GameDAO.newGame(user)
@@ -33,8 +32,10 @@ object GameService {
   }
 
   def submitRound(gameRound: GameRound, user: GameUser) =
-    GameDAO.find(gameRound.gameId).map {
-      _ foreach (RoundDAO.submitRound(gameRound, _, user.id))
+
+    GameDAO.find(gameRound.gameId).flatMap {
+      case Some(g) => RoundDAO.submitRound(gameRound, g, user.id)
+      case None => Future.failed(new Exception("game not found"))
     }
 
   def updateStatus() = ???

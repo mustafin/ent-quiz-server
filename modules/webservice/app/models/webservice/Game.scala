@@ -2,6 +2,7 @@ package models.webservice
 
 import java.sql.Timestamp
 import _root_.util.Extensions._
+import gameservice.{FirstMove, ReplyMove, Move}
 import models.admin._
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
@@ -14,6 +15,7 @@ import slick.lifted.{TableQuery, Tag}
 import play.api.libs.json.Reads._
 
 import scala.concurrent.Future
+import scala.util.Success
 
 
 // Custom validation helpers
@@ -36,17 +38,6 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
     GameData(this.id, Some(user), userTwo, this.scoreOne, this.scoreTwo)
   }
 
-  def isReply(roundNum: Int, userId: Long): Boolean = {
-    if(userOneId.isDefined || userTwoId.isDefined)
-      if(roundNum % 2 == 0){
-        userId == userOneId.get
-      }else{
-        userId == userTwoId.get
-      }
-    else false
-  }
-
-
   def myMove(user: GameUser): Boolean ={
     if(user.id === userOneId){
       userOneMove
@@ -54,6 +45,9 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
       !userOneMove
     }else false
   }
+
+  def by(user: GameUser) = user.id === userOneId
+  def opp(user: GameUser) = user.id === userTwoId
 
 }
 
@@ -109,25 +103,18 @@ object GameDAO{
     db.run(changeMove.update(!game.userOneMove))
   }
 
-
   /**
    * Returns Categories, questions with answers
    *
    * @param round If round exist, then it is opponent move
    * @return Future<Seq<GameCategory>>
    */
+  @Deprecated("Use Move class")
   def moveData(game: Game, round: Option[Round], reply: Boolean): Future[Seq[GameCategory]] = {
 
     if(round.isDefined && round.get.empty)return Future.successful(Nil)
 
     val rand = SimpleFunction.nullary[Double]("rand")
-
-//    val categ = round.flatMap(_.categoryId) match {
-//      case Some(n) => Tables.categories.filter(_.id === n)
-//      case None =>
-//        val playedCats = ServiceTables.rounds.filter(_.gameId === gameId).map(_.categoryId)
-//        Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
-//    }
 
     val categ = if(reply){
       Tables.categories.filter(_.id === round.get.categoryId)
@@ -171,6 +158,25 @@ object GameDAO{
 
   }
 
+  def oneCategoryData(round: Round): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
+    val categ = Tables.categories.filter(_.id === round.categoryId)
+    db.run(categ.result) ->
+    db.run(Tables.questions.filter(_.id inSet round.questions).withAnswers.result)
+  }
+
+  def multipleCategoriesData(game: Game, num: Int): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
+    val rand = SimpleFunction.nullary[Double]("rand")
+    val playedCats = ServiceTables.rounds.filter(_.gameId === game.id).map(_.categoryId)
+    val categ = Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(num)
+    val q = db.run(categ.result)
+    q -> q.flatMap{
+      listOfCat =>
+        Future.sequence(for (category <- listOfCat) yield {
+          val query = Tables.questions.filter(_.catId === category.id).sortBy(r => rand).take(num).withAnswers
+          db.run(query.result)
+        }).map(_.flatten)
+    }
+  }
 
   object Implicits{
 

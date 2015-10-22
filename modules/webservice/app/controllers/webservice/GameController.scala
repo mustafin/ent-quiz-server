@@ -1,21 +1,17 @@
 package controllers.webservice
 
-import gameservice.GameService
-import models.admin.{Question, Category, Answer}
+import gameservice.{GameServiceImpl, GameService}
+import models.webservice.GameDAO.Implicits._
 import models.webservice._
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
-import play.api.libs.json.{JsError, Json, JsObject, JsValue}
-import play.api.mvc.{Result, Action, Controller}
-import play.api.mvc.Controller
-import slick.driver.JdbcProfile
 import play.api.libs.concurrent.Execution.Implicits._
-import models.webservice.GameDAO.Implicits._
-import models.webservice.RoundDAO.Implicits._
+import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.mvc.{Action, Controller}
+import slick.driver.JdbcProfile
 
 import scala.concurrent.Future
 import scala.slick.driver.MySQLDriver.simple._
-import scala.util.{Failure, Success}
 
 /**
  * Created by Murat.
@@ -38,13 +34,16 @@ object GameController extends Controller with ServiceAuth {
     }
   }
 
-  def submitRound = Authenticated(parse.json) { req =>
+  def submitRound = Authenticated.async(parse.json) { req =>
     req.request.body.validate[GameRound].map {
       case round: GameRound =>
-        GameService.submitRound(round, req.user)
-        Ok(Json.obj("success" -> 1))
+        GameService.submitRound(round, req.user).map{
+          x => Ok(Json.obj("success" -> 1))
+        }.recover{
+          case e => BadRequest(Json.obj("error" -> e.getMessage))
+        }
     }.recoverTotal(
-      e => BadRequest(Json.obj("error" -> "wrong request body format"))
+      e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     )
   }
 
@@ -71,6 +70,14 @@ object GameController extends Controller with ServiceAuth {
     }
 
   }
+
+  def newStart = Authenticated.async{ req =>
+    GameServiceImpl.startGame(req.user).map(Ok(_)) recover {
+      case e => BadRequest(Json.obj("error" -> e.getMessage))
+    }
+
+  }
+
 
   //  implicit def conv(stat: Result): Future[Result] = Future.successful(stat)
 

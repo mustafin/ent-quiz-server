@@ -1,4 +1,6 @@
 package util
+
+import scala.concurrent.Future
 import scala.math.Ordered._
 /**
  * Created by Murat.
@@ -12,5 +14,6 @@ object Extensions {
       }else false
     }
   }
+
 
 }

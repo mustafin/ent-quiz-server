@@ -1,18 +1,17 @@
 package models.webservice
 
-import models.admin.{AnswerTable, CategoryTable, QuestionTable}
+import models.admin.{AnswerTable, CategoryTable, QuestionTable, Tables}
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.Json
 import slick.driver.JdbcProfile
 import slick.driver.MySQLDriver.api._
 import slick.lifted.{TableQuery, Tag}
+import util.Extensions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import util.Extensions._
-
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 /**
  * Created by Murat.
@@ -28,11 +27,15 @@ case class Round(id: Option[Long], gameId: Option[Long], categoryId: Option[Long
   def empty = uoneAnsOneId.isEmpty && uoneAnsTwoId.isEmpty && uoneAnsThreeId.isEmpty &&
     utwoAnsOneId.isEmpty && utwoAnsTwoId.isEmpty && utwoAnsThreeId.isDefined
 
-  def playerAnswers = Map(quesOneId -> uoneAnsOneId, quesTwoId -> uoneAnsTwoId, quesThreeId -> uoneAnsThreeId).withDefaultValue(None)
+  def leftAnswers = playerAnswersMap.values.flatten
 
-  def opponentAnswers = Map(quesOneId -> utwoAnsOneId, quesTwoId -> utwoAnsTwoId, quesThreeId -> utwoAnsThreeId).withDefaultValue(None)
+  def rightAnswers = opponentAnswersMap.values.flatten
 
-  def userAnswers(game: Game) = if (game.userOneMove) opponentAnswers else playerAnswers
+  def playerAnswersMap = Map(quesOneId -> uoneAnsOneId, quesTwoId -> uoneAnsTwoId, quesThreeId -> uoneAnsThreeId).withDefaultValue(None)
+
+  def opponentAnswersMap = Map(quesOneId -> utwoAnsOneId, quesTwoId -> utwoAnsTwoId, quesThreeId -> utwoAnsThreeId).withDefaultValue(None)
+
+  def userAnswers(game: Game) = if (game.userOneMove) opponentAnswersMap else playerAnswersMap
 
   def questions = Set(quesOneId, quesTwoId, quesThreeId).flatten
 
@@ -80,6 +83,10 @@ class RoundTable(tag: Tag) extends Table[Round](tag, "ROUND"){
 object RoundDAO{
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
+  def find(id: Option[Long]): Future[Option[Round]] ={
+    db.run(ServiceTables.rounds.filter(_.id === id).result.headOption)
+  }
+
   def add(round: Round): Unit ={
     db.run(ServiceTables.rounds.insertOrUpdate(round))
   }
@@ -98,33 +105,56 @@ object RoundDAO{
       into ((user,id) => user.copy(id = id)) += round)
   }
 
-  def submitRound(gr: GameRound, game: Game, userId: Option[Long]): Unit ={
+  @Deprecated("This code is deprecated use saveRound()")
+  def submitRound(gr: GameRound, game: Game, userId: Option[Long]): Future[_] ={
 
-      val query = ServiceTables.rounds.filter(g => g.gameId === gr.gameId && g.id === gr.roundId)
-      val d = if (userId === game.userOneId) {
-        val updateQ = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
-          r.uoneAnsOneId, r.uoneAnsTwoId, r.uoneAnsThreeId))
-          .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
-        db.run(updateQ)
+    val query = ServiceTables.rounds.filter(g => g.gameId === gr.gameId && g.id === gr.roundId)
+    val d = if (userId === game.userOneId) {
+      val updateQ = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
+        r.uoneAnsOneId, r.uoneAnsTwoId, r.uoneAnsThreeId))
+        .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
+      db.run(updateQ)
+    } else if (userId === game.userTwoId) {
+      val update = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
+        r.utwoAnsOneId, r.utwoAnsTwoId, r.utwoAnsThreeId))
+        .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
+      db.run(update)
+    } else throw new Exception("game and user does not match")
+    d.andThen{
+      case Success(e) =>
+        db.run(ServiceTables.rounds.filter(_.id === gr.roundId).result.headOption).map{
+          rOp => rOp.foreach{
+            r =>
+              if(!r.finished) GameDAO.toggleMove(game)
+          }
+        }
+      case Failure(e) => Future.failed(e)
+    }
 
-      } else if (userId === game.userTwoId) {
-        val update = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
-          r.utwoAnsOneId, r.utwoAnsTwoId, r.utwoAnsThreeId))
-          .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
+  }
+
+  def saveRound(round: Round, game: Game): Future[Int] ={
+    if(!round.finished) GameDAO.toggleMove(game)
+    db.run(ServiceTables.rounds.filter(_.id === round.id).update(round))
+  }
+
+  def countScores(answers: Set[Long]): Future[Int] ={
+    val query = Tables.answers.filter(ans => (ans.id inSet answers) && ans.isTrue).length
+    db.run(query.result)
+  }
+
+  def countAndSaveScores(answers: Set[Long], game: Game, left: Boolean) = {
+    countScores(answers).flatMap{
+      count => {
+        val q = ServiceTables.games.filter(_.id === game.id)
+        val update = if(left){
+          q.map(_.scoreOne).update(game.scoreOne + count)
+        }else{
+          q.map(_.scoreTwo).update(game.scoreTwo + count)
+        }
         db.run(update)
-
-      } else Future.successful(-1)
-      d.andThen{
-        case Success(e) => //TODO: SIMPLIFY THIS
-          if(e != -1)
-            db.run(ServiceTables.rounds.filter(_.id === gr.roundId).result.headOption).map{
-              rOp => rOp.foreach{
-                r => if(!r.finished) GameDAO.toggleMove(game)
-              }
-            }
       }
-
-
+    }
   }
 
   object Implicits{

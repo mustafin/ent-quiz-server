@@ -14,5 +14,7 @@ case class GameData(gameId: Option[Long], user: Option[GameUser], opponent: Opti
 
 case class GameRound(roundId: Option[Long], gameId: Option[Long], roundNum: Option[Int], catId: Option[Long],
                      q1Id: Option[Long], q2Id: Option[Long], q3Id: Option[Long],
-                     a1Id: Option[Long], a2Id: Option[Long], a3Id: Option[Long])
+                     a1Id: Option[Long], a2Id: Option[Long], a3Id: Option[Long]){
+  def answers = Set(a1Id, a2Id, a3Id).flatten
+}
 

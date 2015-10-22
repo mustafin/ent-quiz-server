@@ -1,7 +1,10 @@
 package gameservice
 
-import models.webservice.{GameRound, Round, GameUser}
-import play.api.libs.json.JsValue
+import models.admin.{Question, Category, Answer}
+import models.webservice._
+import play.api.libs.json.{JsObject, Json, JsValue}
+
+import scala.concurrent.Future
 
 /**
  * Created by Murat.
@@ -9,39 +12,96 @@ import play.api.libs.json.JsValue
 sealed trait Move {
 
   def isReply: Boolean
-  def submit(): Unit
-  def get(): JsValue
-  def serialized(): JsValue
+  def myMove: Boolean
+  def isNew: Boolean
+  def userAnswers: Map[Option[Long], Option[Long]]
+  def submit(gameRound: GameRound): Unit
+  def formattedRoundData: Future[Seq[GameCategory]]
+  def serialized: JsValue
 
 }
 
 object Move{
-//  def from(): Move = {
-//
-//  }
-}
 
-class MyMove(game: GameRound, user: GameUser) extends Move{
+  def apply(round: Round, game: Game, user: GameUser, gr: Option[GameRound] = None): Move = {
 
-  override def isReply: Boolean = false
+    val newRound = if(gr.isDefined){
+      if(game by user) round.copy(uoneAnsOneId = gr.get.a1Id, uoneAnsTwoId = gr.get.a2Id, uoneAnsThreeId = gr.get.a3Id)
+      else if (game opp user) round.copy(utwoAnsOneId = gr.get.a1Id, utwoAnsTwoId = gr.get.a2Id, utwoAnsThreeId = gr.get.a3Id)
+      else round
+    } else round
 
-  override def submit(): Unit = GameService.submitRound(game, user)
-
-  override def get(): JsValue = ???
-
-  override def serialized(): JsValue = ???
+    if(round.finished) new FirstMove(newRound, game, user)
+    else new ReplyMove(newRound, game, user)
+  }
 
 }
 
-class OpponentMove(game: GameRound, user: GameUser) extends Move{
+abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Move{
+  def submit(gameRound: GameRound): Unit = {
+    if(game by user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
+    else if(game opp user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
+    RoundDAO.saveRound(round, game)
+  }
 
-  override def isReply: Boolean = true
+  def myMove: Boolean = game.myMove(user)
 
-  override def submit(): Unit = GameService.submitRound(game, user)
+  def isNew: Boolean = round.empty
 
-  override def get(): JsValue = ???
+  def userAnswers: Map[Option[Long], Option[Long]] = round.userAnswers(game)
 
-  override def serialized(): JsValue = ???
+  def formattedRoundData: Future[Seq[GameCategory]] = {
+    if(this.isNew) Future.successful(Nil)
+    else {
+      val (cat, ques) = roundData
+      formatData(cat, ques)
+    }
+  }
+
+  def roundData: (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]])
+
+  def formatData(categoriesFut: Future[Seq[Category]],
+                 quesAndAnswersFut: Future[Seq[(Question, Option[Answer])]]): Future[Seq[GameCategory]] = {
+    for{
+      categories <- categoriesFut
+      items <- quesAndAnswersFut
+    }yield{
+      categories.map(
+        x => {
+          //converting List[Tuple3] to List[k -> (k -> v)]
+          val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
+            .map{
+            case (qes, ans) => GameQuestion(qes, ans.flatten, userAnswers(qes.id))
+          }.toVector
+          GameCategory(x, gameQuestions)
+        }
+      )
+    }
+  }
+
+  def serialized = Json.toJson(game).as[JsObject] +
+    ("roundId" -> Json.toJson(round.id)) +
+    ("data" -> Json.toJson(formattedRoundData))
+
+}
+
+case class FirstMove(round: Round, game: Game, user: GameUser) extends AbstractMove(round, game, user){
+
+  def isReply: Boolean = false
+
+  def roundData:(Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
+    GameDAO.oneCategoryData(round)
+  }
+
+}
+
+case class ReplyMove(round: Round, game: Game, user: GameUser) extends AbstractMove(round, game, user){
+
+  def isReply: Boolean = true
+
+  def roundData:(Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
+    GameDAO.multipleCategoriesData(game, 3)
+  }
 
 }
 

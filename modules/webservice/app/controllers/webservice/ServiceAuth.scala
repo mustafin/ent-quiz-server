@@ -34,6 +34,7 @@ trait ServiceAuth {
       }
       p.getOrElse(Future(Results.Unauthorized(Json.obj("error" -> "unauthorized"))))
     }
+
   }
 
 }
