@@ -1,0 +1,3 @@
+# --unique username
+
+ALTER TABLE `GAME_USER` ADD UNIQUE `UNIQUE_NAME`(`USERNAME`);

@@ -9,5 +9,6 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-slick-evolutions" % "1.0.1",
   "org.joda" % "joda-money" % "0.9",
   "org.slf4j" % "slf4j-nop" % "1.6.4",
-  "io.really" %% "jwt-scala" % "1.2.2"
+  "io.really" %% "jwt-scala" % "1.2.2",
+  "com.github.fernandospr" % "javapns-jdk16" % "2.3.1"
 )

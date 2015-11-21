@@ -3,6 +3,7 @@ package gameservice
 import models.admin.{Question, Category, Answer}
 import models.webservice._
 import play.api.libs.json.{JsObject, Json, JsValue}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 
@@ -10,19 +11,17 @@ import scala.concurrent.Future
  * Created by Murat.
  */
 sealed trait Move {
-
   def isReply: Boolean
   def myMove: Boolean
   def isNew: Boolean
   def userAnswers: Map[Option[Long], Option[Long]]
   def submit(gameRound: GameRound): Unit
   def formattedRoundData: Future[Seq[GameCategory]]
-  def serialized: JsValue
+  def serialized: Future[JsValue]
 
 }
 
 object Move{
-
   def apply(round: Round, game: Game, user: GameUser, gr: Option[GameRound] = None): Move = {
 
     val newRound = if(gr.isDefined){
@@ -34,10 +33,12 @@ object Move{
     if(round.finished) new FirstMove(newRound, game, user)
     else new ReplyMove(newRound, game, user)
   }
-
 }
 
 abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Move{
+
+  import models.webservice.GameDAO.Implicits._
+
   def submit(gameRound: GameRound): Unit = {
     if(game by user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
     else if(game opp user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
@@ -79,9 +80,11 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
     }
   }
 
-  def serialized = Json.toJson(game).as[JsObject] +
-    ("roundId" -> Json.toJson(round.id)) +
-    ("data" -> Json.toJson(formattedRoundData))
+  def serialized = formattedRoundData.map{ rData =>
+    Json.toJson(game).as[JsObject] +
+      ("roundId" -> Json.toJson(round.id)) +
+      ("data" -> Json.toJson(rData))
+  }
 
 }
 

@@ -10,7 +10,8 @@ import play.api.libs.json.{Reads, JsPath, JsError, Json}
 import play.api.mvc.{Action, Controller}
 import slick.driver.JdbcProfile
 
-import scala.slick.driver.MySQLDriver.simple._
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.libs.json.Reads._ // Custom validation helpers
 import play.api.libs.functional.syntax._ // Combinator syntax
@@ -40,20 +41,25 @@ object Application extends Controller{
     }
   }
 
-  def login = Action(parse.json){ request =>
+  def login = Action.async(parse.json){ request =>
     request.body.validate[(String, String)].map{
       case (username: String, password: String) =>
-        val exist = GameUserDAO.checkCredentials(username, password)
-
-        if(exist) {
-          val user = GameUserDAO.findByName(username)
+        val res = for{
+          exist <- GameUserDAO.checkCredentials(username, password)
+          if exist
+          user <- GameUserDAO.findByName(username)
+          if user.isDefined
+        }yield{
           val token = Token.createToken(user.get)
           Ok(Json.obj("success" -> 1, "token" -> token, "userId" -> user.get.id))
-        }else {
-          Unauthorized(Json.obj("error" -> "wrong username or password"))
         }
+
+        res recover {
+          case cause => Unauthorized(Json.obj("error" -> "wrong username or password"))
+        }
+
     }.recoverTotal{
-      e => BadRequest(JsError.toJson(e))
+      e => Future.successful(BadRequest(JsError.toJson(e)))
     }
   }
 

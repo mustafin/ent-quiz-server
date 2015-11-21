@@ -1,12 +1,18 @@
-val a = getPerson
+trait B{
+  def go()
+}
 
-if(a.get.name == "murat")
-  println("asd")
-else
-  println("F")
+trait A extends B{
+  def go = "GKO"
+}
 
-class Person(val name:String)
+class Murat{
+  self: B =>
 
-def getPerson: Option[Person] = None
+  def asdasd = self.go()
 
-def nu: Person = null
+
+}
+
+
+val t = new Murat with A

@@ -17,22 +17,22 @@ object UserDAO{
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   def findByName(username: String): Option[User] = db withSession{ implicit  session =>
-    Tables.users.filter(_.username === username).firstOption
+    Users.filter(_.username === username).firstOption
   }
 
   def find(id: Option[Long]) = db withSession {implicit session =>
-    Tables.users.filter(_.id === id).firstOption
+    Users.filter(_.id === id).firstOption
   }
 
   def create(user: User) = db withSession{ implicit session =>
     val userToInsert = user.copy(password = encryptPassword(user.password))
-    (Tables.users += userToInsert).run
+    (Users += userToInsert).run
   }
   
   def checkCredentials(username: String, password: String): Boolean = db withSession {
     implicit session =>
       val encrypted = encryptPassword(password)
-      Tables.users.filter(x => x.username === username && x.password === encrypted).exists.run
+      Users.filter(x => x.username === username && x.password === encrypted).exists.run
   }
 
   /**

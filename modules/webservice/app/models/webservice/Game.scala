@@ -28,14 +28,13 @@ import play.api.libs.concurrent.Execution.Implicits._
 
 case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long],
                 createdAt: Option[Timestamp], userOneMove: Boolean = true, scoreOne: Int = 0, scoreTwo: Int = 0){
-  def toGameData(user: GameUser) = {
+  def toGameData(user: GameUser): Future[GameData] = {
     val userTwo = user.id match{
       case this.userOneId => GameUserDAO.find(this.userTwoId)
       case this.userTwoId => GameUserDAO.find(this.userOneId)
-      case _ => None
+      case _ => Future.successful(None)
     }
-
-    GameData(this.id, Some(user), userTwo, this.scoreOne, this.scoreTwo)
+    userTwo.map(uTwo =>GameData(this.id, Some(user), uTwo, this.scoreOne, this.scoreTwo))
   }
 
   def myMove(user: GameUser): Boolean ={
@@ -70,6 +69,7 @@ class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
 
 object GameObject{
 //  def apply()
+
 }
 
 object GameDAO{
@@ -77,29 +77,34 @@ object GameDAO{
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   def tempClear = {
-    db.run(ServiceTables.games.delete)
+    db.run(Games.delete)
   }
 
   def newGame(user: GameUser): Future[Game] = {
-    val gameRes = db.run(ServiceTables.games.
+    val gameRes = db.run(Games.
       filter(x => x.userTwoId.isEmpty && x.userOneId =!= user.id).result.headOption)
     gameRes.flatMap {
       case Some(g) =>
-        db.run(ServiceTables.games.filter(_.id === g.id).map(_.userTwoId).update(user.id))
+        db.run(Games.filter(_.id === g.id).map(_.userTwoId).update(user.id))
         Future.successful(g.copy(userTwoId = user.id))
       case None =>
         val game = Game(None, user.id, None, Some(new Timestamp(new java.util.Date().getTime)))
-        db.run((ServiceTables.games returning ServiceTables.games.map(_.id)
+        db.run((Games returning Games.map(_.id)
           into ((user,id) => user.copy(id = id))) += game)
     }
   }
 
+  //TODO remove
+  def devices(): Future[Seq[GameUserDevice]] = {
+    db.run(Devices.result)
+  }
+
   def find(id: Option[Long]): Future[Option[Game]] ={
-    db.run(ServiceTables.games.filter(_.id === id).result.headOption)
+    db.run(Games.filter(_.id === id).result.headOption)
   }
 
   def toggleMove(game: Game): Unit ={
-    val changeMove = ServiceTables.games.filter(_.id === game.id).map(_.userOneMove)
+    val changeMove = Games.filter(_.id === game.id).map(_.userOneMove)
     db.run(changeMove.update(!game.userOneMove))
   }
 
@@ -109,7 +114,7 @@ object GameDAO{
    * @param round If round exist, then it is opponent move
    * @return Future<Seq<GameCategory>>
    */
-  @Deprecated("Use Move class")
+  @Deprecated
   def moveData(game: Game, round: Option[Round], reply: Boolean): Future[Seq[GameCategory]] = {
 
     if(round.isDefined && round.get.empty)return Future.successful(Nil)
@@ -117,10 +122,10 @@ object GameDAO{
     val rand = SimpleFunction.nullary[Double]("rand")
 
     val categ = if(reply){
-      Tables.categories.filter(_.id === round.get.categoryId)
+      Categories.filter(_.id === round.get.categoryId)
     }else {
-      val playedCats = ServiceTables.rounds.filter(_.gameId === game.id).map(_.categoryId)
-      Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
+      val playedCats = Rounds.filter(_.gameId === game.id).map(_.categoryId)
+      Categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
     }
 
     val categoriesFut = db.run(categ.result)
@@ -129,10 +134,10 @@ object GameDAO{
       listOfCat => {
         val results =
           if(listOfCat.length == 1)
-          Seq(db.run(Tables.questions.filter(_.id inSet round.get.questions).withAnswers.result))
+          Seq(db.run(Questions.filter(_.id inSet round.get.questions).withAnswers.result))
         else{
           for (category <- listOfCat) yield {
-            val query = Tables.questions.filter(_.catId === category.id).sortBy(r => rand).take(3).withAnswers
+            val query = Questions.filter(_.catId === category.id).sortBy(r => rand).take(3).withAnswers
             db.run(query.result)
           }
         }
@@ -159,23 +164,42 @@ object GameDAO{
   }
 
   def oneCategoryData(round: Round): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
-    val categ = Tables.categories.filter(_.id === round.categoryId)
+    val categ = Categories.filter(_.id === round.categoryId)
     db.run(categ.result) ->
-    db.run(Tables.questions.filter(_.id inSet round.questions).withAnswers.result)
+    db.run(Questions.filter(_.id inSet round.questions).withAnswers.result)
   }
 
   def multipleCategoriesData(game: Game, num: Int): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
     val rand = SimpleFunction.nullary[Double]("rand")
-    val playedCats = ServiceTables.rounds.filter(_.gameId === game.id).map(_.categoryId)
-    val categ = Tables.categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(num)
+    val playedCats = Rounds.filter(_.gameId === game.id).map(_.categoryId)
+    val categ = Categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(num)
     val q = db.run(categ.result)
     q -> q.flatMap{
       listOfCat =>
         Future.sequence(for (category <- listOfCat) yield {
-          val query = Tables.questions.filter(_.catId === category.id).sortBy(r => rand).take(num).withAnswers
+          val query = Questions.filter(_.catId === category.id).sortBy(r => rand).take(num).withAnswers
           db.run(query.result)
         }).map(_.flatten)
     }
+
+    /* -- TODO: CHANGE TO THIS OPTIMIZED QUERY
+      SELECT CQ.CID, CQ.NAME, CQ.QID, CQ.TITLE, CQ.CATEGORY_ID, CQ.IMG, CQ.AID, CQ.IS_TRUE, CQ.ATITLE, CQ.QUESTION_ID, CQ.AIMG
+  FROM (SELECT C.ID AS CID, C.NAME, Q.ID AS QID, Q.TITLE, Q.CATEGORY_ID, Q.IMG, A.ID AS AID, A.IS_TRUE, A.TITLE AS ATITLE, A.QUESTION_ID, A.IMG AS AIMG,
+  	(@RN := IF(@C = C.ID, @RN + 1, IF(@C := C.ID, 1, 1))) AS RN
+    FROM (SELECT C.ID, C.NAME
+      FROM CATEGORY C
+      ORDER BY RAND()
+      LIMIT 3
+      ) C JOIN
+    QUESTION Q
+    ON C.ID = Q.CATEGORY_ID
+  	JOIN ANSWER A ON Q.ID = A.QUESTION_ID
+  	CROSS JOIN
+    (SELECT @C := 0, @RN := 0) PARAMS
+  	ORDER BY C.ID, RAND()
+  ) CQ
+WHERE RN <= 3
+     */
   }
 
   object Implicits{

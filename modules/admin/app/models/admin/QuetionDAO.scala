@@ -13,9 +13,8 @@ import scala.slick.driver.MySQLDriver.simple._
 object QuetionDAO {
 
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
-  lazy val questions = Tables.questions
 
-  def list(catId: Long) = db.withSession { implicit session => questions.filter(_.catId === catId).list }
+  def list(catId: Long) = db.withSession { implicit session => Questions.filter(_.catId === catId).list }
 
   def create(catId: Long) = ???
 

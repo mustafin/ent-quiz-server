@@ -1,15 +1,19 @@
 package models.webservice
 
 
-import models.admin.{Tables, User, UserDAO}
+import models.admin.{User, UserDAO}
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json._
 import slick.driver.JdbcProfile
 
-import scala.slick.driver.MySQLDriver.simple._
+import scala.concurrent.Future
+
+//import scala.slick.driver.MySQLDriver.simple._
+import slick.driver.MySQLDriver.api._
 import slick.lifted.{TableQuery, Tag}
 import play.api.Play.current
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import play.api.libs.json.Reads._ // Custom validation helpers
 import play.api.libs.functional.syntax._ // Combinator syntax
@@ -17,11 +21,23 @@ import play.api.libs.functional.syntax._ // Combinator syntax
 /**
  * Created by Murat.
  */
+case class GameUserDevice(userId: Long, deviceId: String, deviceOS: String)
 
+class GameUserDevicesTable(tag: Tag) extends Table[GameUserDevice](tag, "GAME_USER_DEVICES"){
+
+  def userId = column[Long]("USER_ID")
+  def deviceId = column[String]("DEVICE_ID")
+  def deviceOS = column[String]("DEVICE_OS")
+
+  def ===(gameDevice: GameUserDevice) = userId === gameDevice.userId &&
+                                      deviceId === gameDevice.deviceId && 
+                                      deviceOS === gameDevice.deviceOS
+  
+  override def * = (userId, deviceId, deviceOS) <> (GameUserDevice.tupled, GameUserDevice.unapply)
+
+}
 
 case class GameUser(id: Option[Long], username: String, password: String, rating: Option[Int])
-
-
 
 class GameUserTable(tag: Tag) extends Table[GameUser](tag, "GAME_USER"){
 
@@ -37,27 +53,45 @@ class GameUserTable(tag: Tag) extends Table[GameUser](tag, "GAME_USER"){
 object GameUserDAO{
 
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
+  lazy val users = TableQuery[GameUserTable]
+  lazy val devices = TableQuery[GameUserDevicesTable]
 
-
-  def register(user: GameUser) = db withSession{ implicit session =>
+  def register(user: GameUser) = {
     val userToInsert = user.copy(password = UserDAO.encryptPassword(user.password))
-    (ServiceTables.users += userToInsert).run
+    db.run(users += userToInsert)
   }
 
-  def findByName(username: String): Option[GameUser] = db withSession{ implicit  session =>
-    ServiceTables.users.filter(_.username === username).firstOption
+  def findByName(username: String): Future[Option[GameUser]] = {
+    db.run(users.filter(_.username === username).result.headOption)
   }
 
-  def find(id: Option[Long]) = db withSession {implicit session =>
-    if(id.isDefined)
-      ServiceTables.users.filter(_.id === id).firstOption
-    else None
+  def find(id: Option[Long]) = {
+    db.run(users.filter(_.id === id).result.headOption)
   }
 
-  def checkCredentials(username: String, password: String): Boolean = db withSession {
-    implicit session =>
-      val encrypted = UserDAO.encryptPassword(password)
-      ServiceTables.users.filter(x => x.username === username && x.password === encrypted).exists.run
+  def checkCredentials(username: String, password: String): Future[Boolean] = {
+    val encrypted = UserDAO.encryptPassword(password)
+    db.run(users.filter(x => x.username === username && x.password === encrypted).exists.result)
+  }
+
+  def registerDevice(userDevice: GameUserDevice) = {
+    val q = devices.filter(x => x === userDevice).exists.result.flatMap{
+      exist =>
+        if(!exist){
+          devices += userDevice
+        } else {
+          DBIO.successful(None)
+        }
+    }.transactionally
+    db.run(q)
+  }
+
+  def userDevices(userId: Long): Future[Seq[GameUserDevice]] = {
+    db.run(devices.filter(_.userId === userId).result)
+  }
+
+  def userDevicesIds(userId: Long): Future[Seq[String]] = {
+    db.run(devices.filter(_.userId === userId).map(_.deviceId).result)
   }
 
   implicit object GameUserFormat extends Format[GameUser] {

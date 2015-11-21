@@ -15,16 +15,14 @@ import scala.concurrent.duration._
  */
 package object admin {
 
-  object Tables{
-    lazy val categories = TableQuery[CategoryTable]
-    lazy val users = TableQuery[UserTable]
-    lazy val questions = TableQuery[QuestionTable]
-    lazy val answers = TableQuery[AnswerTable]
+  lazy val Categories = TableQuery[CategoryTable]
+  lazy val Users = TableQuery[UserTable]
+  lazy val Questions = TableQuery[QuestionTable]
+  lazy val Answers = TableQuery[AnswerTable]
 
-    def questionAnswers(qId: Long)(implicit db: Database) =
-      Await.result(db.run(answers.filter(_.quesId === qId).result), 1.minute).toList
+  def questionAnswers(qId: Long)(implicit db: Database) =
+    Await.result(db.run(Answers.filter(_.quesId === qId).result), 1.minute).toList
 
-  }
 
   implicit val catFormat = Json.format[Category]
   implicit val quesFormat = Json.format[Question]
@@ -50,11 +48,11 @@ package object admin {
 
   implicit class CategoryExtensions[C[_]](q: Query[CategoryTable, Category, C]) {
 
-    def with3Questions = q.joinLeft(Tables.questions).on(_.id === _.catId)
+    def with3Questions = q.joinLeft(Questions).on(_.id === _.catId)
   }
 
   implicit class QuestionExtensions[C[_]](q: Query[QuestionTable, Question, C]) {
-    def withAnswers = q.joinLeft(Tables.answers).on(_.id === _.quesId)
+    def withAnswers = q.joinLeft(Answers).on(_.id === _.quesId)
   }
 
 
@@ -70,7 +68,7 @@ package object admin {
     def title = column[String]("TITLE")
     def catId = column[Long]("CATEGORY_ID")
     def img = column[String]("IMG")
-    def category = foreignKey("CATEGORY_FK", catId, Tables.categories)(_.id.get, onDelete=ForeignKeyAction.Cascade)
+    def category = foreignKey("CATEGORY_FK", catId, Categories)(_.id.get, onDelete=ForeignKeyAction.Cascade)
     override def * = (id, title, catId, img) <> (Question.tupled, Question.unapply)
 
   }
@@ -84,7 +82,7 @@ package object admin {
     def isTrue = column[Boolean]("IS_TRUE")
     def quesId = column[Long]("QUESTION_ID")
     def img = column[String]("IMG")
-    def question = foreignKey("QUESTION_FK", quesId, Tables.questions)(_.id.get)
+    def question = foreignKey("QUESTION_FK", quesId, Questions)(_.id.get)
 
     override def * = (id, title, isTrue, quesId, img) <> (Answer.tupled, Answer.unapply)
 

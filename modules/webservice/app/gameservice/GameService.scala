@@ -9,7 +9,7 @@ import scala.concurrent.Future
  * Created by Murat.
  * Game Service Logic
  */
-@Deprecated("Use GameServiceTrait and GameServiceImpl")
+@Deprecated
 object GameService {
 
   def startGame(user: GameUser) = GameDAO.newGame(user)

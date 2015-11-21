@@ -2,6 +2,7 @@ package gameservice
 
 import models.webservice._
 import play.api.libs.json.JsValue
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.Future
 
@@ -12,7 +13,7 @@ trait GameServiceTrait {
 
   def startGame(user: GameUser): Future[JsValue]
 
-  def getRoundData(user: GameUser, game: Game): Future[JsValue]
+  def getRoundData(user: GameUser, game: Game): Future[Future[JsValue]]
 
   def submitRound(gameRound: GameRound, user: GameUser): Future[Move]
 
@@ -21,9 +22,7 @@ trait GameServiceTrait {
 object GameServiceImpl extends GameServiceTrait{
 
   override def startGame(user: GameUser): Future[JsValue] =
-    newGameRound(user){ (game, round) =>
-      Move(round, game, user).serialized
-  }
+    newGameRoundFlat(user){ (game, round) => Move(round, game, user).serialized }
 
   override def submitRound(gameRound: GameRound, user: GameUser): Future[Move] =
     findGameRound(gameRound.roundId, gameRound.gameId){ (game, round) =>
@@ -32,7 +31,7 @@ object GameServiceImpl extends GameServiceTrait{
 
 
 
-  override def getRoundData(user: GameUser, game: Game): Future[JsValue] = {
+  override def getRoundData(user: GameUser, game: Game): Future[Future[JsValue]] = {
     findGameRound(game.id){ (game, round) =>
       Move(round, game, user).serialized
     }
@@ -43,6 +42,13 @@ object GameServiceImpl extends GameServiceTrait{
       game <- GameDAO.newGame(user)
       round <- RoundDAO.newRound(game.id)
   } yield f(game, round)
+
+  private def newGameRoundFlat[T](user: GameUser)(f: (Game, Round) => Future[T]): Future[T]  =
+    for{
+      game <- GameDAO.newGame(user)
+      round <- RoundDAO.newRound(game.id)
+      out <- f(game,round)
+  } yield out
 
 
   private def findGameRound[T](gameId: Option[Long], roundId: Option[Long] = None)(f: (Game, Round) => T): Future[T] =
@@ -58,6 +64,7 @@ object GameServiceImpl extends GameServiceTrait{
       }
       op.getOrElse(throw new Exception("round or game not found"))
   }
+
 
 }
 

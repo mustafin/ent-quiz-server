@@ -1,11 +1,19 @@
 # WEBSERVICE Routes
 
-POST        /register        controllers.webservice.Application.register
-POST        /login           controllers.webservice.Application.login
+POST        /register                    controllers.webservice.Application.register
+POST        /login                       controllers.webservice.Application.login
 
-GET         /clearGames              controllers.webservice.GameController.clearGames
-GET         /game                   controllers.webservice.GameController.index
-GET         /start                  controllers.webservice.GameController.start
-POST         /submitRound           controllers.webservice.GameController.submitRound
-GET         /getRoundData/:gameId   controllers.webservice.GameController.getRoundData(gameId: Long)
+GET         /game                        controllers.webservice.GameController.index
+GET         /start                       controllers.webservice.GameController.start
+POST        /submitRound                 controllers.webservice.GameController.submitRound
+GET         /getRoundData/:gameId        controllers.webservice.GameController.getRoundData(gameId: Long)
+POST        /registerDevice              controllers.webservice.GameController.registerDevice
+
+POST        /findUser                    controllers.webservice.InviteController.findUser
+POST        /inviteForGame               controllers.webservice.InviteController.inviteForGame
+
+#TEMP TEST
+GET         /clearGames                  controllers.webservice.GameController.clearGames
+GET         /testSend                    controllers.webservice.GameController.testSendMessage
+
 

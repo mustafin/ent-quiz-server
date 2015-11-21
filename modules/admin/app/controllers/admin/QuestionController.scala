@@ -85,7 +85,7 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
     val question = db.withSession { implicit session =>
       questions.filter(_.id === id).firstOption }
     if (question.isDefined)
-      Ok(admin.question.edit(question.get, form.fill((question.get, Tables.questionAnswers(id)(db)))))
+      Ok(admin.question.edit(question.get, form.fill((question.get, questionAnswers(id)(db)))))
     else NotFound("Not FOund")
   }
 
@@ -125,6 +125,7 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
   def delete(id: Long) = Authenticated { implicit rs =>
     val q = questions.filter(_.id === id)
     val quest = db.withSession { implicit session => q.firstOption.get }
+
     db.withSession { implicit session => q.delete }
     Redirect(routes.QuestionController.list(quest.catId))
   }
@@ -132,6 +133,7 @@ class QuestionController  @Inject() (val messagesApi: MessagesApi) extends Contr
   def deleteAnswer(id: Long) = Authenticated { implicit rs =>
     val a = answers.filter(_.id === id)
     val answer = db.withSession { implicit session => a.firstOption.get }
+
     db.withSession { implicit session => a.delete }
     Redirect(routes.QuestionController.edit(answer.quesId))
   }
