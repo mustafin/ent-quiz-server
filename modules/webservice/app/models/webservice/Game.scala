@@ -80,18 +80,22 @@ object GameDAO{
     db.run(Games.delete)
   }
 
-  def newGame(user: GameUser): Future[Game] = {
+  def newGameOrJoin(user: GameUser): Future[Game] = {
     val gameRes = db.run(Games.
       filter(x => x.userTwoId.isEmpty && x.userOneId =!= user.id).result.headOption)
     gameRes.flatMap {
       case Some(g) =>
-        db.run(Games.filter(_.id === g.id).map(_.userTwoId).update(user.id))
+        db.run(Games.filter(_.id === g.id).map(_.userTwoId).update(user.id).transactionally)
         Future.successful(g.copy(userTwoId = user.id))
       case None =>
-        val game = Game(None, user.id, None, Some(new Timestamp(new java.util.Date().getTime)))
-        db.run((Games returning Games.map(_.id)
-          into ((user,id) => user.copy(id = id))) += game)
+        newGame(user)
     }
+  }
+
+  def newGame(user: GameUser, opponent: Option[Long] = None): Future[Game] = {
+    val game = Game(None, user.id, opponent, Some(new Timestamp(new java.util.Date().getTime)))
+    db.run((Games returning Games.map(_.id)
+      into ((user,id) => user.copy(id = id))) += game)
   }
 
   //TODO remove
@@ -164,14 +168,16 @@ object GameDAO{
   }
 
   def oneCategoryData(round: Round): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
-    val categ = Categories.filter(_.id === round.categoryId)
-    db.run(categ.result) ->
-    db.run(Questions.filter(_.id inSet round.questions).withAnswers.result)
+    val categ = Categories.filter(_.id === round.categoryId).result
+    val ques = Questions.filter(_.id inSet round.questions).withAnswers.result
+
+    db.run(categ) -> db.run(ques)
   }
 
   def multipleCategoriesData(game: Game, num: Int): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
+
     val rand = SimpleFunction.nullary[Double]("rand")
-    val playedCats = Rounds.filter(_.gameId === game.id).map(_.categoryId)
+    val playedCats = Rounds.filter(r => r.gameId === game.id && r.categoryId.isDefined).map(_.categoryId)
     val categ = Categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(num)
     val q = db.run(categ.result)
     q -> q.flatMap{

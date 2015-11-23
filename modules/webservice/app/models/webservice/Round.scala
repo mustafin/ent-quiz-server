@@ -25,7 +25,7 @@ case class Round(id: Option[Long], gameId: Option[Long], categoryId: Option[Long
                  utwoAnsOneId.isDefined && utwoAnsTwoId.isDefined && utwoAnsThreeId.isDefined
 
   def empty = uoneAnsOneId.isEmpty && uoneAnsTwoId.isEmpty && uoneAnsThreeId.isEmpty &&
-    utwoAnsOneId.isEmpty && utwoAnsTwoId.isEmpty && utwoAnsThreeId.isDefined
+    utwoAnsOneId.isEmpty && utwoAnsTwoId.isEmpty && utwoAnsThreeId.isEmpty
 
   def leftAnswers = playerAnswersMap.values.flatten
 
@@ -130,12 +130,6 @@ object RoundDAO{
         }
       case Failure(e) => Future.failed(e)
     }
-
-  }
-
-  def saveRound(round: Round, game: Game): Future[Int] ={
-    if(!round.finished) GameDAO.toggleMove(game)
-    db.run(Rounds.filter(_.id === round.id).update(round))
   }
 
   def countScores(answers: Set[Long]): Future[Int] ={
@@ -143,7 +137,7 @@ object RoundDAO{
     db.run(query.result)
   }
 
-  def countAndSaveScores(answers: Set[Long], game: Game, left: Boolean) = {
+  def countAndSaveScores(answers: Set[Long], game: Game, left: Boolean): Future[Int] = {
     countScores(answers).flatMap{
       count => {
         val q = Games.filter(_.id === game.id)

@@ -1,18 +1,10 @@
-trait B{
-  def go()
-}
 
-trait A extends B{
-  def go = "GKO"
-}
-
-class Murat{
-  self: B =>
-
-  def asdasd = self.go()
+val d: Long = 200
 
 
+def asd(t: java.lang.Number): Unit ={
+  t
 }
 
 
-val t = new Murat with A
+asd(long2Long(d))

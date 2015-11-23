@@ -1,6 +1,8 @@
 package models.webservice
 
 import models.admin.{Category, Answer, Question}
+import util.Extensions._
+
 
 /**
  * Created by Murat.
@@ -16,5 +18,6 @@ case class GameRound(roundId: Option[Long], gameId: Option[Long], roundNum: Opti
                      q1Id: Option[Long], q2Id: Option[Long], q3Id: Option[Long],
                      a1Id: Option[Long], a2Id: Option[Long], a3Id: Option[Long]){
   def answers = Set(a1Id, a2Id, a3Id).flatten
+
 }
 

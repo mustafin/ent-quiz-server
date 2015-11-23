@@ -22,20 +22,26 @@ object GameController extends Controller with ServiceAuth {
     Ok(Json.obj("asd" -> "asf"))
   }
 
+  def test = Action.async{ req =>
+    GameServiceImpl.startGameOrJoin(GameUser(Some(2), "askar", "", Some(1200))).map{
+      Ok(_)
+    }
+
+  }
+
   def start = Authenticated.async { req =>
-    for {
-      game <- GameService.startGame(req.user)
-      (rId, cat) <- GameService.getRoundData(req.user, game)
-      gameData <- game.toGameData(req.user)
-    } yield {
-      Ok(Json.toJson(gameData).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(cat)))
+    GameServiceImpl.startGameOrJoin(req.user).map(Ok(_))
+    .recover{
+      case er =>
+        println(er.getMessage)
+        BadRequest(Json.obj("error" -> "unexpected error"))
     }
   }
 
   def submitRound = Authenticated.async(parse.json) { req =>
     req.request.body.validate[GameRound].map {
       case round: GameRound =>
-        GameService.submitRound(round, req.user).map{
+        GameServiceImpl.submitRound(round, req.user).map{
           x => Ok(Json.obj("success" -> 1))
         }.recover{
           case e => BadRequest(Json.obj("error" -> e.getMessage))
@@ -50,10 +56,9 @@ object GameController extends Controller with ServiceAuth {
     val f = for{
       g <- GameDAO.find(Some(id))
       if g.isDefined
-      game <- g.get.toGameData(authReq.user)
-      (rId, d) <- GameService.getRoundData(authReq.user, g.get)
+      move <- GameServiceImpl.getRoundData(authReq.user, g.get)
     } yield {
-      Ok(Json.toJson(game).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(d)))
+      Ok(move)
     }
     f recover { case cause => BadRequest(Json.obj("error" -> "wrong id"))}
 
@@ -68,7 +73,7 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def newStart = Authenticated.async{ req =>
-    GameServiceImpl.startGame(req.user).map(Ok(_)) recover {
+    GameServiceImpl.startGameOrJoin(req.user).map(Ok(_)) recover {
       case e => BadRequest(Json.obj("error" -> e.getMessage))
     }
 
@@ -89,31 +94,6 @@ object GameController extends Controller with ServiceAuth {
       e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     )
 
-  }
-
-  def findUser() = Authenticated.async(parse.json){ req =>
-    req.request.body.validate[String]((JsPath \ "username").read[String]).map{
-      case username =>
-        GameUserDAO.findByName(username).map{
-          user => Ok(Json.obj("user" -> user))
-        } recover { case cause => BadRequest(Json.obj("error" -> "user not found"))}
-
-    }.recoverTotal{
-      e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
-    }
-  }
-
-  def inviteForGame() = Authenticated.async(parse.json){ req =>
-    req.request.body.validate[Long]((JsPath \ "userId").read[Long]).map{
-      case userId =>
-        GameUserDAO.userDevicesIds(userId).map{
-          devicesIds =>
-            Push.devPush(s"invite from user ${req.user.username}", devicesIds)
-            Ok(Json.obj("success" -> 1))
-        } recover { case cause => BadRequest(Json.obj("error" -> s"no devices registered for userId $userId"))}
-    }.recoverTotal{
-      e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
-    }
   }
 
   //TODO REMOVE

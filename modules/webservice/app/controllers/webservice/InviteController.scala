@@ -22,7 +22,6 @@ object InviteController extends Controller with ServiceAuth{
         GameUserDAO.findByName(username).map{
           user => Ok(Json.obj("user" -> user))
         } recover { case cause => BadRequest(Json.obj("error" -> "user not found"))}
-
     }.recoverTotal{
       e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     }
@@ -33,7 +32,7 @@ object InviteController extends Controller with ServiceAuth{
       case userId =>
         GameUserDAO.userDevicesIds(userId).map{
           devicesIds =>
-            Push.devPush(s"invite from user ${user.username}", devicesIds)
+            Push.sendInvite(user, devicesIds)
             Ok(Json.obj("success" -> 1))
         } recover { case cause => BadRequest(Json.obj("error" -> s"no devices registered for userId $userId"))}
     }.recoverTotal{
@@ -42,29 +41,34 @@ object InviteController extends Controller with ServiceAuth{
   }
 
   def startGame() = Authenticated.async(parse.json){ case AuthReq(user, req) =>
-    validate[Long](req, "userId"){
-      userId => Future.successful(Ok(Json.obj("succes" -> 1)))
-
+    req.body.validate[Long]((JsPath \ "opponentId").read[Long]).map{
+      opponentId =>
+        val move = GameServiceImpl.startGameWithOpponent(user, Some(opponentId))
+        move.map(Ok(_))
+    }.recoverTotal{
+      e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     }
   }
 
   def rejectGame() = Authenticated.async(parse.json){ case AuthReq(user, req) =>
-    validate[Long](req, "userId"){
+    req.body.validate[Long]((JsPath \ "opponentId").read[Long]).map{
       userId => Future.successful(Ok(Json.obj("succes" -> 1)))
         GameUserDAO.userDevicesIds(userId).map {
           deviceIds =>
             Push.rejectGame(user, deviceIds)
             Ok(Json.obj("success" -> 1))
         } recover { case cause => BadRequest(Json.obj("error" -> s"no devices registered for userId $userId"))}
-    }
-  }
-
-  def validate[T](req: Request[JsValue], key: String)(body:T => Future[Result]): Future[Result] ={
-    req.body.validate[T]((JsPath \ key).read[T]).map{
-      case d => body(d)
     }.recoverTotal{
       e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     }
   }
+//
+//  def validate[T](req: Request[JsValue], key: String)(body:T => Future[Result]): Future[Result] ={
+//    req.body.validate[T]((JsPath \ key).read[T]).map{
+//      case d => body(d)
+//    }.recoverTotal{
+//      e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
+//    }
+//  }
 
 }

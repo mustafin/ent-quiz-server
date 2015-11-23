@@ -30,7 +30,7 @@ object Move{
       else round
     } else round
 
-    if(round.finished) new FirstMove(newRound, game, user)
+    if(round.empty) new FirstMove(newRound, game, user)
     else new ReplyMove(newRound, game, user)
   }
 }
@@ -42,7 +42,7 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
   def submit(gameRound: GameRound): Unit = {
     if(game by user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
     else if(game opp user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
-    RoundDAO.saveRound(round, game)
+    RoundDAO.submitRound(gameRound, game, user.id)
   }
 
   def myMove: Boolean = game.myMove(user)
@@ -52,11 +52,10 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
   def userAnswers: Map[Option[Long], Option[Long]] = round.userAnswers(game)
 
   def formattedRoundData: Future[Seq[GameCategory]] = {
-    if(this.isNew) Future.successful(Nil)
-    else {
+    if(game.myMove(user)) {
       val (cat, ques) = roundData
       formatData(cat, ques)
-    }
+    } else Future.successful(Nil)
   }
 
   def roundData: (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]])
@@ -80,10 +79,15 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
     }
   }
 
-  def serialized = formattedRoundData.map{ rData =>
-    Json.toJson(game).as[JsObject] +
-      ("roundId" -> Json.toJson(round.id)) +
-      ("data" -> Json.toJson(rData))
+  def serialized = {
+    for {
+      rData <- formattedRoundData
+      gameData <- game.toGameData(user)
+    } yield {
+      Json.toJson(gameData).as[JsObject] +
+        ("roundId" -> Json.toJson(round.id)) +
+        ("data" -> Json.toJson(rData))
+    }
   }
 
 }
@@ -93,7 +97,7 @@ case class FirstMove(round: Round, game: Game, user: GameUser) extends AbstractM
   def isReply: Boolean = false
 
   def roundData:(Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
-    GameDAO.oneCategoryData(round)
+    GameDAO.multipleCategoriesData(game, 3)
   }
 
 }
@@ -103,7 +107,7 @@ case class ReplyMove(round: Round, game: Game, user: GameUser) extends AbstractM
   def isReply: Boolean = true
 
   def roundData:(Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
-    GameDAO.multipleCategoriesData(game, 3)
+    GameDAO.oneCategoryData(round)
   }
 
 }

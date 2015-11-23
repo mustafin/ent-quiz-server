@@ -9,11 +9,14 @@ POST        /submitRound                 controllers.webservice.GameController.s
 GET         /getRoundData/:gameId        controllers.webservice.GameController.getRoundData(gameId: Long)
 POST        /registerDevice              controllers.webservice.GameController.registerDevice
 
-POST        /findUser                    controllers.webservice.InviteController.findUser
+#INVITE CONTROLLER
+POST        /findOpponent                controllers.webservice.InviteController.findUser
 POST        /inviteForGame               controllers.webservice.InviteController.inviteForGame
+POST        /acceptInviteForGame         controllers.webservice.InviteController.startGame
+POST        /rejectInviteForGame         controllers.webservice.InviteController.rejectGame
 
 #TEMP TEST
 GET         /clearGames                  controllers.webservice.GameController.clearGames
 GET         /testSend                    controllers.webservice.GameController.testSendMessage
-
+GET         /test                        controllers.webservice.GameController.test
 

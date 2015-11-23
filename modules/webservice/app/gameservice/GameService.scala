@@ -12,7 +12,7 @@ import scala.concurrent.Future
 @Deprecated
 object GameService {
 
-  def startGame(user: GameUser) = GameDAO.newGame(user)
+  def startGame(user: GameUser) = GameDAO.newGameOrJoin(user)
 
   def getRoundData(user: GameUser, game: Game): Future[(Option[Long], Seq[GameCategory])] = {
 

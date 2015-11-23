@@ -15,7 +15,7 @@ object Push {
 
   val keystorePassword = ""
 
-  def devPush(pushAlertMessage: String, devices: Seq[String], custom: Map[String, String] = Map(), badgeNumber: Int = 1): List[PushedNotification] = {
+  def devPush(pushAlertMessage: String, devices: Seq[String], custom: Map[String, AnyRef] = Map(), badgeNumber: Int = 1): List[PushedNotification] = {
 
     val keystoreFile = Play.classloader.getResourceAsStream("cert/cert.p12")
 
@@ -24,12 +24,12 @@ object Push {
     payload.addBadge(badgeNumber)
     payload.addAlert(pushAlertMessage)
     payload.addSound("default")
+
     if(custom.nonEmpty){
       for((k, v) <- custom){
         payload.addCustomDictionary(k, v)
       }
     }
-
 
 //    val notifications:List[PushedNotification] = javapns.Push.payload(payload, keystoreFile, keystorePassword, false, devices).toList
     val results = javapns.Push.payload(payload, keystoreFile, keystorePassword, false, devices.asJava)
@@ -42,13 +42,13 @@ object Push {
   }
 
   def sendInvite(user: GameUser, devices: Seq[String]): List[PushedNotification] = {
-    val custom = Map("type" -> "invite", "userId" -> user.id.get.toString)
-    devPush(s"${user.username} invites you", devices, custom)
+    val custom = Map("type" -> "inviteForGame", "userId" -> long2Long(user.id.get))
+    devPush(s"${user.username} приглашает вас в игру", devices, custom)
   }
 
   def rejectGame(user: GameUser, devices: Seq[String]): List[PushedNotification] = {
-    val custom = Map("type" -> "reject", "userId" -> user.id.get.toString)
-    devPush(s"${user.username} rejected game", devices, custom)
+    val custom = Map("type" -> "reject", "userId" -> long2Long(user.id.get))
+    devPush(s"${user.username} отклонил(а) ваше приглошение", devices, custom)
   }
 
 }
