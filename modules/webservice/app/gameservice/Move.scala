@@ -4,7 +4,7 @@ import models.admin.{Question, Category, Answer}
 import models.webservice._
 import play.api.libs.json.{JsObject, Json, JsValue}
 import scala.concurrent.ExecutionContext.Implicits.global
-
+import models.webservice.GameDAO.Implicits._
 import scala.concurrent.Future
 
 /**
@@ -33,16 +33,70 @@ object Move{
     if(round.empty) new FirstMove(newRound, game, user)
     else new ReplyMove(newRound, game, user)
   }
+
+  def finished(game: Game, user: GameUser) = {
+    game.toGameData(user).map{
+      gameData => Json.toJson(gameData).as[JsObject] ++ Json.obj("finished" -> true)
+    }
+  }
+
 }
 
 abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Move{
 
-  import models.webservice.GameDAO.Implicits._
+  import play.api.libs.json._
+  import play.api.libs.json.Reads._
+  import play.api.libs.json.Json.JsValueWrapper
+
+  implicit val objectMapFormat = new Format[Map[String, Object]] {
+
+    def writes(map: Map[String, Object]): JsValue =
+      Json.obj(map.map{case (s, o) =>
+        val ret:(String, JsValueWrapper) = o match {
+          case _:String => s -> JsString(o.asInstanceOf[String])
+          case _:Number => s -> JsNumber(o.asInstanceOf[Long])
+          case t:Map[String,Object] => s -> writes(t)
+          case None => s -> JsNull
+          case _ => s -> JsArray(o.asInstanceOf[List[String]].map(JsString))
+        }
+        ret
+      }.toSeq:_*)
+
+    def reads(jv: JsValue): JsResult[Map[String, Object]] =
+      JsSuccess(jv.as[Map[String, JsValue]].map{case (k, v) =>
+        k -> (v match {
+          case s:JsString => s.as[String]
+//          case t:JsNumber => t.as[Long]
+          case l => l.as[List[String]]
+        })
+      })
+  }
+
+  val rounds = GameDAO.gameRounds(game.id)
+
+  def opAnswers = {
+    if(game by user){
+      rounds.map(_.map(r => Map(r.id.toString -> Map(
+        r.quesOneId.toString -> r.utwoAnsOneId,
+        r.quesTwoId.toString -> r.utwoAnsTwoId,
+        r.quesThreeId.toString -> r.utwoAnsThreeId
+        ))
+      ))
+    }else{
+      rounds.map(_.map(r => Map(r.id.toString ->Map(
+        r.quesOneId.toString -> r.uoneAnsOneId,
+        r.quesTwoId.toString -> r.uoneAnsTwoId,
+        r.quesThreeId.toString -> r.uoneAnsThreeId
+        ))
+      ))
+    }
+//    Future.successful(List("2" -> 3, "3"->5))
+  }
 
   def submit(gameRound: GameRound): Unit = {
     if(game by user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
     else if(game opp user) RoundDAO.countAndSaveScores(gameRound.answers, game, left = true)
-    RoundDAO.submitRound(gameRound, game, user.id)
+    rounds.flatMap(RoundDAO.submitRound(gameRound, game, user.id, _))
   }
 
   def myMove: Boolean = game.myMove(user)
@@ -79,14 +133,17 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
     }
   }
 
+
   def serialized = {
     for {
       rData <- formattedRoundData
       gameData <- game.toGameData(user)
+      opAns <- opAnswers
     } yield {
       Json.toJson(gameData).as[JsObject] +
         ("roundId" -> Json.toJson(round.id)) +
-        ("data" -> Json.toJson(rData))
+        ("data" -> Json.toJson(rData)) +
+        ("opAnswers" -> Json.toJson(opAns))
     }
   }
 

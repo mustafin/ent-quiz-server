@@ -4,9 +4,12 @@ import models.admin._
 import play.api.Play
 import play.api.db.slick.DatabaseConfigProvider
 import play.api.libs.json.Json
+import slick.dbio
+import slick.dbio.Effect.{Write, Read}
 import slick.driver.JdbcProfile
 import slick.driver.MySQLDriver.api._
 import slick.lifted.{TableQuery, Tag}
+import slick.profile.FixedSqlStreamingAction
 import util.Extensions._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -105,8 +108,15 @@ object RoundDAO{
       into ((user,id) => user.copy(id = id)) += round)
   }
 
-  @Deprecated
-  def submitRound(gr: GameRound, game: Game, userId: Option[Long]): Future[_] ={
+  def get(gameId: Option[Long]): Future[Round] = {
+    lastRound(gameId).flatMap{
+      round => round.filter(round => !round.finished)
+        .map(Future.successful)
+        .getOrElse(newRound(gameId))
+    }
+  }
+
+  def submitRound(gr: GameRound, game: Game, userId: Option[Long], rounds: Seq[Round]): Future[_] ={
 
     val query = Rounds.filter(g => g.gameId === gr.gameId && g.id === gr.roundId)
     val d = if (userId === game.userOneId) {
@@ -120,15 +130,17 @@ object RoundDAO{
         .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
       db.run(update)
     } else throw new Exception("game and user does not match")
-    d.andThen{
-      case Success(e) =>
+    d.map{
+      _ =>
         db.run(Rounds.filter(_.id === gr.roundId).result.headOption).map{
-          rOp => rOp.foreach{
-            r =>
+          _.foreach{ r =>
               if(!r.finished) GameDAO.toggleMove(game)
+              else{
+                if(rounds.size >= GameDAO.LAST_ROUND)
+                  GameDAO.finishGame(game.id)
+              }
           }
         }
-      case Failure(e) => Future.failed(e)
     }
   }
 

@@ -15,100 +15,54 @@ trait GameServiceTrait {
   
   def startGameWithOpponent(user: GameUser, opponent: Option[Long]): Future[JsValue]
 
-  def getRoundData(user: GameUser, game: Game): Future[JsValue]
+  def getRoundData(user: GameUser, gameId: Long): Future[JsValue]
 
-  def submitRound(gameRound: GameRound, user: GameUser): Future[Move]
+  def submitRound(gameRound: GameRound, user: GameUser): Future[Unit]
 
 }
 
 object GameServiceImpl extends GameServiceTrait{
 
   override def startGameOrJoin(user: GameUser): Future[JsValue] =
-    newGameRoundFlat(user){ (game, round) => Move(round, game, user).serialized }
+    for {
+      game <- GameDAO.newGameOrJoin(user)
+      round <- RoundDAO.get(game.id)
+      out <- Move(round, game, user).serialized
+    } yield out
 
   override def startGameWithOpponent(user: GameUser, opponent: Option[Long]): Future[JsValue] =
     for{
       game <- GameDAO.newGame(user, opponent)
       round <- RoundDAO.newRound(game.id)
       move <- Move(round, game, user).serialized
-    } yield {
-      move
-    }
+    } yield move
 
-  override def submitRound(gameRound: GameRound, user: GameUser): Future[Move] = {
-    val moveFut = findGameRound(gameRound.gameId, gameRound.roundId) { (game, round) =>
-      Move(round, game, user, Some(gameRound))
-    }
-    moveFut.foreach{ _.submit(gameRound) }
-    moveFut
-  }
-
-  override def getRoundData(user: GameUser, game: Game): Future[JsValue] = {
-    findGameRoundFlat(game.id){ (game, round) =>
-      Move(round, game, user).serialized
-    }
-  }
-
-
-  private def newGameRound[T](user: GameUser)(f: (Game, Round) => T): Future[T]  = {
-    val tupFut = for {
-      game <- GameDAO.newGameOrJoin(user)
-      lastRound <- RoundDAO.lastRound(game.id)
-    } yield (game, lastRound)
-
-    tupFut.flatMap {
-      case (g, l) =>
-        if(l.isDefined) Future.successful(f(g,l.get))
-        else RoundDAO.newRound(g.id).map(f(g, _))
-    }
-  }
-
-  private def newGameRoundFlat[T](user: GameUser)(f: (Game, Round) => Future[T]): Future[T]  = {
-    val tupFut = for {
-      game <- GameDAO.newGameOrJoin(user)
-      lastRound <- RoundDAO.lastRound(game.id)
-    } yield (game, lastRound)
-
-    tupFut.flatMap {
-      case (g, l) =>
-        if(l.isDefined) f(g, l.get)
-        else RoundDAO.newRound(g.id).flatMap(f(g, _))
-    }
-  }
-
-  private def findGameRound[T](gameId: Option[Long], roundId: Option[Long] = None)(f: (Game, Round) => T): Future[T] =
-    for{
-      roundOp <- roundId.fold(RoundDAO.lastRound(gameId))(rId => RoundDAO.find(Some(rId)))
-      gameOp <- GameDAO.find(gameId)
+  override def submitRound(gameRound: GameRound, user: GameUser): Future[Unit] = {
+    val moveFut = for{
+      roundOp <- RoundDAO.find(gameRound.roundId)
+      gameOp <- GameDAO.find(gameRound.gameId)
     } yield {
       val op = for{
         round <- roundOp
         game <- gameOp
       } yield{
-          f(game, round)
-      }
-      op.getOrElse(throw new Exception("round or game not found"))
-  }
-
-  private def findGameRoundFlat[T](gameId: Option[Long], roundId: Option[Long] = None)(f: (Game, Round) => Future[T]): Future[T] = {
-    println(gameId)
-    println(roundId)
-    val d = for{
-      roundOp <- roundId.fold(RoundDAO.lastRound(gameId))(rId => RoundDAO.find(Some(rId)))
-      gameOp <- GameDAO.find(gameId)
-    } yield (roundOp, gameOp)
-    d.flatMap{ case (r, g) =>
-      println(r)
-      println(g)
-      val op = for{
-        round <- r
-        game <- g
-      } yield{
-        f(game, round)
+          Move(round, game, user, Some(gameRound))
       }
       op.getOrElse(throw new Exception("round or game not found"))
     }
+    moveFut.map{ _.submit(gameRound) }
+  }
 
+  override def getRoundData(user: GameUser, gameId: Long): Future[JsValue] = {
+    GameDAO.find(Some(gameId)).flatMap{
+      _.map{
+        game => if(game.finished){
+          Move.finished(game, user)
+        }else{
+          RoundDAO.get(Some(gameId)).flatMap(Move(_, game, user).serialized)
+        }
+      }.getOrElse(throw new Exception("round or game not found"))
+    }
   }
 
 }

@@ -27,7 +27,9 @@ import play.api.libs.concurrent.Execution.Implicits._
  */
 
 case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Long],
-                createdAt: Option[Timestamp], userOneMove: Boolean = true, scoreOne: Int = 0, scoreTwo: Int = 0){
+                createdAt: Option[Timestamp], userOneMove: Boolean = true,
+                finished: Boolean = false,
+                scoreOne: Int = 0, scoreTwo: Int = 0){
   def toGameData(user: GameUser): Future[GameData] = {
     val userTwo = user.id match{
       case this.userOneId => GameUserDAO.find(this.userTwoId)
@@ -57,10 +59,11 @@ class GameTable(tag: Tag) extends Table[Game](tag, "GAME"){
   def userTwoId = column[Option[Long]]("USER_TWO")
   def createdAt = column[Option[Timestamp]]("CREATED_AT")
   def userOneMove = column[Boolean]("USER_ONE_MOVE")
+  def finished = column[Boolean]("FINISHED")
   def scoreOne = column[Int]("SCORE_ONE")
   def scoreTwo = column[Int]("SCORE_TWO")
 
-  override def * = (id, userOneId, userTwoId, createdAt, userOneMove, scoreOne, scoreTwo) <> (Game.tupled, Game.unapply)
+  override def * = (id, userOneId, userTwoId, createdAt, userOneMove, finished, scoreOne, scoreTwo) <> (Game.tupled, Game.unapply)
 
   def userOne = foreignKey("USER_ONE_FK", userOneId, TableQuery[GameUserTable])(_.id.get, onDelete=ForeignKeyAction.Cascade)
   def userTwo = foreignKey("USER_TWO_FK", userTwoId, TableQuery[GameUserTable])(_.id.get, onDelete=ForeignKeyAction.Cascade)
@@ -74,10 +77,16 @@ object GameObject{
 
 object GameDAO{
 
+
+  val LAST_ROUND = 6
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   def tempClear = {
     db.run(Games.delete)
+  }
+
+  def gameRounds(id: Option[Long]): Future[Seq[Round]] = {
+    db.run(Rounds.filter(_.gameId === id).result)
   }
 
   def newGameOrJoin(user: GameUser): Future[Game] = {
@@ -96,6 +105,17 @@ object GameDAO{
     val game = Game(None, user.id, opponent, Some(new Timestamp(new java.util.Date().getTime)))
     db.run((Games returning Games.map(_.id)
       into ((user,id) => user.copy(id = id))) += game)
+  }
+
+  def finishGame(gameId: Option[Long]): Unit ={
+    db.run(Games.filter(_.id === gameId).map(_.finished).update(true))
+  }
+
+  /**
+   * Before using method check if last round is finished
+   */
+  def isLastRound(gameId: Option[Long]): Future[Boolean] = {
+    RoundDAO.roundNum(gameId).map(_ >= LAST_ROUND)
   }
 
   //TODO remove

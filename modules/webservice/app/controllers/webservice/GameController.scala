@@ -42,7 +42,7 @@ object GameController extends Controller with ServiceAuth {
     req.request.body.validate[GameRound].map {
       case round: GameRound =>
         GameServiceImpl.submitRound(round, req.user).map{
-          x => Ok(Json.obj("success" -> 1))
+          _ => Ok(Json.obj("success" -> 1))
         }.recover{
           case e => BadRequest(Json.obj("error" -> e.getMessage))
         }
@@ -54,9 +54,7 @@ object GameController extends Controller with ServiceAuth {
   def getRoundData(id: Long) = Authenticated.async { authReq =>
 
     val f = for{
-      g <- GameDAO.find(Some(id))
-      if g.isDefined
-      move <- GameServiceImpl.getRoundData(authReq.user, g.get)
+      move <- GameServiceImpl.getRoundData(authReq.user, id)
     } yield {
       Ok(move)
     }

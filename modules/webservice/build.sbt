@@ -12,3 +12,4 @@ libraryDependencies ++= Seq(
   "io.really" %% "jwt-scala" % "1.2.2",
   "com.github.fernandospr" % "javapns-jdk16" % "2.3.1"
 )
+

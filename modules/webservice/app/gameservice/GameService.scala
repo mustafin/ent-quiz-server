@@ -31,13 +31,13 @@ object GameService {
       )
   }
 
-  def submitRound(gameRound: GameRound, user: GameUser) =
-
-    GameDAO.find(gameRound.gameId).flatMap {
-      case Some(g) => RoundDAO.submitRound(gameRound, g, user.id)
-      case None => Future.failed(new Exception("game not found"))
-    }
-
-  def updateStatus() = ???
+//  def submitRound(gameRound: GameRound, user: GameUser) =
+//
+//    GameDAO.find(gameRound.gameId).flatMap {
+//      case Some(g) => RoundDAO.submitRound(gameRound, g, user.id)
+//      case None => Future.failed(new Exception("game not found"))
+//    }
+//
+//  def updateStatus() = ???
 
 }
