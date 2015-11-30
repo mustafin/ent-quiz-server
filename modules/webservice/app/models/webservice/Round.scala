@@ -47,6 +47,30 @@ case class Round(id: Option[Long], gameId: Option[Long], categoryId: Option[Long
     else !finished
   }
 
+  def toGameRound(gameByUser: Boolean) = toOppGameRound(!gameByUser)
+
+  def toOppGameRound(gameByUser: Boolean) = {
+    if(gameByUser) {
+      GameRound(this.id, None, None, this.categoryId,
+        this.quesOneId,
+        this.quesTwoId,
+        this.quesThreeId,
+        this.utwoAnsOneId,
+        this.utwoAnsTwoId,
+        this.utwoAnsThreeId
+      )
+    }else{
+      GameRound(this.id, None, None, this.categoryId,
+        this.quesOneId,
+        this.quesTwoId,
+        this.quesThreeId,
+        this.uoneAnsOneId,
+        this.uoneAnsTwoId,
+        this.uoneAnsThreeId
+      )
+    }
+  }
+
 }
 
 class RoundTable(tag: Tag) extends Table[Round](tag, "ROUND"){
@@ -119,12 +143,12 @@ object RoundDAO{
   def submitRound(gr: GameRound, game: Game, userId: Option[Long], rounds: Seq[Round]): Future[_] ={
 
     val query = Rounds.filter(g => g.gameId === gr.gameId && g.id === gr.roundId)
-    val d = if (userId === game.userOneId) {
+    val d = if (game by userId) {
       val updateQ = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
         r.uoneAnsOneId, r.uoneAnsTwoId, r.uoneAnsThreeId))
         .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))
       db.run(updateQ)
-    } else if (userId === game.userTwoId) {
+    } else if (game opp userId) {
       val update = query.map(r => (r.categoryId, r.quesOneId, r.quesTwoId, r.quesThreeId,
         r.utwoAnsOneId, r.utwoAnsTwoId, r.utwoAnsThreeId))
         .update((gr.catId, gr.q1Id, gr.q2Id, gr.q3Id, gr.a1Id, gr.a2Id, gr.a3Id))

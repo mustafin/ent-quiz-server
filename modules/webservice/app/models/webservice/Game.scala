@@ -47,8 +47,10 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
     }else false
   }
 
-  def by(user: GameUser) = user.id === userOneId
-  def opp(user: GameUser) = user.id === userTwoId
+  def by(userId: Option[Long]) = userId === userOneId
+  def opp(userId: Option[Long]) = userId === userTwoId
+  def by(user: GameUser) = this.by(user.id)
+  def opp(user: GameUser) = this.opp(user.id)
 
 }
 

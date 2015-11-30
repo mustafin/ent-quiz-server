@@ -18,7 +18,6 @@ sealed trait Move {
   def submit(gameRound: GameRound): Unit
   def formattedRoundData: Future[Seq[GameCategory]]
   def serialized: Future[JsValue]
-
 }
 
 object Move{
@@ -44,53 +43,11 @@ object Move{
 
 abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Move{
 
-  import play.api.libs.json._
-  import play.api.libs.json.Reads._
-  import play.api.libs.json.Json.JsValueWrapper
-
-  implicit val objectMapFormat = new Format[Map[String, Object]] {
-
-    def writes(map: Map[String, Object]): JsValue =
-      Json.obj(map.map{case (s, o) =>
-        val ret:(String, JsValueWrapper) = o match {
-          case _:String => s -> JsString(o.asInstanceOf[String])
-          case _:Number => s -> JsNumber(o.asInstanceOf[Long])
-          case t:Map[String,Object] => s -> writes(t)
-          case None => s -> JsNull
-          case _ => s -> JsArray(o.asInstanceOf[List[String]].map(JsString))
-        }
-        ret
-      }.toSeq:_*)
-
-    def reads(jv: JsValue): JsResult[Map[String, Object]] =
-      JsSuccess(jv.as[Map[String, JsValue]].map{case (k, v) =>
-        k -> (v match {
-          case s:JsString => s.as[String]
-//          case t:JsNumber => t.as[Long]
-          case l => l.as[List[String]]
-        })
-      })
-  }
-
   val rounds = GameDAO.gameRounds(game.id)
 
   def opAnswers = {
-    if(game by user){
-      rounds.map(_.map(r => Map(r.id.toString -> Map(
-        r.quesOneId.toString -> r.utwoAnsOneId,
-        r.quesTwoId.toString -> r.utwoAnsTwoId,
-        r.quesThreeId.toString -> r.utwoAnsThreeId
-        ))
-      ))
-    }else{
-      rounds.map(_.map(r => Map(r.id.toString ->Map(
-        r.quesOneId.toString -> r.uoneAnsOneId,
-        r.quesTwoId.toString -> r.uoneAnsTwoId,
-        r.quesThreeId.toString -> r.uoneAnsThreeId
-        ))
-      ))
-    }
-//    Future.successful(List("2" -> 3, "3"->5))
+      val gameBy = game by user
+      rounds.map(_.map(_.toOppGameRound(gameBy)))
   }
 
   def submit(gameRound: GameRound): Unit = {
@@ -125,7 +82,7 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
           //converting List[Tuple3] to List[k -> (k -> v)]
           val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
             .map{
-            case (qes, ans) => GameQuestion(qes, ans.flatten, userAnswers(qes.id))
+            case (qes, ans) => GameQuestion(qes, ans.flatten)
           }.toVector
           GameCategory(x, gameQuestions)
         }

@@ -8,7 +8,7 @@ import util.Extensions._
  * Created by Murat.
  */
 
-case class GameQuestion(ques: Question, answers: Seq[Answer], opAns: Option[Long])
+case class GameQuestion(ques: Question, answers: Seq[Answer])
 case class GameCategory(category: Category, questions: Seq[GameQuestion])
 case class GameData(gameId: Option[Long], user: Option[GameUser], opponent: Option[GameUser], scoreOne: Int, scoreTwo: Int){
   def opponentStart = opponent.isDefined

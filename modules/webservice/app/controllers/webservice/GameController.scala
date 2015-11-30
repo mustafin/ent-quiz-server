@@ -23,10 +23,8 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def test = Action.async{ req =>
-    GameServiceImpl.startGameOrJoin(GameUser(Some(2), "askar", "", Some(1200))).map{
-      Ok(_)
-    }
-
+    GameServiceImpl.startGameOrJoin(GameUser(Some(2), "askar", "", Some(1200)))
+      .map(Ok(_))
   }
 
   def start = Authenticated.async { req =>
@@ -43,7 +41,7 @@ object GameController extends Controller with ServiceAuth {
       case round: GameRound =>
         GameServiceImpl.submitRound(round, req.user).map{
           _ => Ok(Json.obj("success" -> 1))
-        }.recover{
+        } recover {
           case e => BadRequest(Json.obj("error" -> e.getMessage))
         }
     }.recoverTotal(
@@ -52,14 +50,8 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def getRoundData(id: Long) = Authenticated.async { authReq =>
-
-    val f = for{
-      move <- GameServiceImpl.getRoundData(authReq.user, id)
-    } yield {
-      Ok(move)
-    }
-    f recover { case cause => BadRequest(Json.obj("error" -> "wrong id"))}
-
+    GameServiceImpl.getRoundData(authReq.user, id)
+      .map(Ok(_)) recover { case cause => BadRequest(Json.obj("error" -> "wrong id"))}
   }
 
   def clearGames = Action.async{
@@ -78,10 +70,12 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def registerDevice() = Authenticated.async(parse.json){ req =>
+
     implicit val userDeviceForm = (
       (JsPath \ "deviceId").read[String] and
       (JsPath \ "deviceOS").read[String]
       ).tupled
+
     req.request.body.validate[(String, String)].map {
       case (deviceId, deviceOS) =>
         val uDevice = GameUserDevice(req.user.id.get, deviceId, deviceOS)
