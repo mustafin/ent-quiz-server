@@ -11,3 +11,5 @@ package object webservice{
   lazy val Rounds = TableQuery[RoundTable]
 
 }
+
+

@@ -1,10 +1,22 @@
+object Test {
 
-val d: Long = 200
+  trait Observer[T] {
+    def onError(error: Throwable): Unit
+
+    def onCompleted(): Unit
+
+    def onNext(value: T): Unit
+  }
+
+  trait Observable[T]{
+    def subscribe(observer: Observer[T]): Subscription
+  }
+
+  trait Subscription{
+    def unsubscribe(): Unit
+    def isUnsubscribed: Boolean
+  }
 
 
-def asd(t: java.lang.Number): Unit ={
-  t
+
 }
-
-
-asd(long2Long(d))

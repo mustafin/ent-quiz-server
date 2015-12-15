@@ -66,7 +66,6 @@ object GameController extends Controller with ServiceAuth {
     GameServiceImpl.startGameOrJoin(req.user).map(Ok(_)) recover {
       case e => BadRequest(Json.obj("error" -> e.getMessage))
     }
-
   }
 
   def registerDevice() = Authenticated.async(parse.json){ req =>

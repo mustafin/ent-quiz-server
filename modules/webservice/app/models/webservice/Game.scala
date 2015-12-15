@@ -47,10 +47,10 @@ case class Game(id: Option[Long], userOneId: Option[Long], userTwoId: Option[Lon
     }else false
   }
 
-  def by(userId: Option[Long]) = userId === userOneId
-  def opp(userId: Option[Long]) = userId === userTwoId
-  def by(user: GameUser) = this.by(user.id)
-  def opp(user: GameUser) = this.opp(user.id)
+  def by(userId: Option[Long]): Boolean = userId === userOneId
+  def opp(userId: Option[Long]): Boolean = userId === userTwoId
+  def by(user: GameUser): Boolean = this.by(user.id)
+  def opp(user: GameUser): Boolean = this.opp(user.id)
 
 }
 
@@ -180,7 +180,7 @@ object GameDAO{
           //converting List[Tuple3] to List[k -> (k -> v)]
           val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
           .map{
-            case (qes, ans) => GameQuestion(qes, ans.flatten, round.flatMap(_.userAnswers(game)(qes.id)))
+            case (qes, ans) => GameQuestion(qes, ans.flatten)
           }.toVector
           GameCategory(x, gameQuestions)
         }
