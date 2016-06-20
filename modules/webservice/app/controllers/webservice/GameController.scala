@@ -44,6 +44,7 @@ object GameController extends Controller with ServiceAuth with GameServiceImpl {
         } recover {
           case e => BadRequest(Json.obj("error" -> e.getMessage))
         }
+      case _ => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     }.recoverTotal(
       e => Future.successful(BadRequest(Json.obj("error" -> "wrong request body format")))
     )

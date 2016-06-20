@@ -107,11 +107,12 @@ abstract class AbstractMove(round: Round, game: Game, user: GameUser) extends Mo
 }
 
 case class FirstMove(round: Round, game: Game, user: GameUser) extends AbstractMove(round, game, user){
+  import util.GameConsts._
 
   def isReply: Boolean = false
 
   def roundData:(Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
-    GameDAO.multipleCategoriesData(game, 3)
+    GameDAO.multipleCategoriesData(game, CATEG_NUM)
   }
 
 }

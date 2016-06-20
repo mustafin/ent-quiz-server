@@ -11,6 +11,7 @@ import slick.driver.MySQLDriver.api._
 import slick.lifted.{TableQuery, Tag}
 import slick.profile.FixedSqlStreamingAction
 import util.Extensions._
+import util.GameConsts
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -160,7 +161,7 @@ object RoundDAO{
           _.foreach{ r =>
               if(!r.finished) GameDAO.toggleMove(game)
               else{
-                if(rounds.size >= GameDAO.LAST_ROUND)
+                if(rounds.size >= GameConsts.CATEG_NUM)
                   GameDAO.finishGame(game.id)
               }
           }

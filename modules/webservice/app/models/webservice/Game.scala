@@ -79,8 +79,8 @@ object GameObject{
 
 object GameDAO{
 
+  import _root_.util.GameConsts._
 
-  val LAST_ROUND = 6
   val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
 
   def tempClear = {
@@ -117,7 +117,7 @@ object GameDAO{
    * Before using method check if last round is finished
    */
   def isLastRound(gameId: Option[Long]): Future[Boolean] = {
-    RoundDAO.roundNum(gameId).map(_ >= LAST_ROUND)
+    RoundDAO.roundNum(gameId).map(_ >= CATEG_NUM)
   }
 
   //TODO remove
