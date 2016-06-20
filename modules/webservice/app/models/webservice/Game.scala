@@ -134,60 +134,6 @@ object GameDAO{
     db.run(changeMove.update(!game.userOneMove))
   }
 
-  /**
-   * Returns Categories, questions with answers
-   *
-   * @param round If round exist, then it is opponent move
-   * @return Future<Seq<GameCategory>>
-   */
-  @Deprecated
-  def moveData(game: Game, round: Option[Round], reply: Boolean): Future[Seq[GameCategory]] = {
-
-    if(round.isDefined && round.get.empty)return Future.successful(Nil)
-
-    val rand = SimpleFunction.nullary[Double]("rand")
-
-    val categ = if(reply){
-      Categories.filter(_.id === round.get.categoryId)
-    }else {
-      val playedCats = Rounds.filter(_.gameId === game.id).map(_.categoryId)
-      Categories.filter(row => !(row.id in playedCats)).sortBy(_ => rand).take(3)
-    }
-
-    val categoriesFut = db.run(categ.result)
-
-    val quesAndAnswersFut = categoriesFut.flatMap(
-      listOfCat => {
-        val results =
-          if(listOfCat.length == 1)
-          Seq(db.run(Questions.filter(_.id inSet round.get.questions).withAnswers.result))
-        else{
-          for (category <- listOfCat) yield {
-            val query = Questions.filter(_.catId === category.id).sortBy(r => rand).take(3).withAnswers
-            db.run(query.result)
-          }
-        }
-        Future.sequence(results)
-      }
-    ).map(_.flatten)
-
-    for{
-      categories <- categoriesFut
-      items <- quesAndAnswersFut
-    }yield{
-      categories.map(
-        x => {
-          //converting List[Tuple3] to List[k -> (k -> v)]
-          val gameQuestions = items.filter(_._1.catId == x.id.get).groupBy(_._1).mapValues(_.map(_._2))
-          .map{
-            case (qes, ans) => GameQuestion(qes, ans.flatten)
-          }.toVector
-          GameCategory(x, gameQuestions)
-        }
-      )
-    }
-
-  }
 
   def oneCategoryData(round: Round): (Future[Seq[Category]], Future[Seq[(Question, Option[Answer])]]) = {
     val categ = Categories.filter(_.id === round.categoryId).result

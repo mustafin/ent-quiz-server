@@ -1,6 +1,6 @@
 package controllers.webservice
 
-import gameservice.{GameServiceImpl, GameService}
+import gameservice.GameServiceImpl
 import helpers.Push
 import models.webservice.GameDAO.Implicits._
 import models.webservice._
@@ -16,19 +16,19 @@ import scala.slick.driver.MySQLDriver.simple._
 /**
  * Created by Murat.
  */
-object GameController extends Controller with ServiceAuth {
+object GameController extends Controller with ServiceAuth with GameServiceImpl {
 
   def index: Action[JsValue] = Authenticated(parse.json) { req =>
     Ok(Json.obj("asd" -> "asf"))
   }
 
   def test = Action.async{ req =>
-    GameServiceImpl.startGameOrJoin(GameUser(Some(2), "askar", "", Some(1200)))
+    startGameOrJoin(GameUser(Some(2), "askar", "", Some(1200)))
       .map(Ok(_))
   }
 
   def start = Authenticated.async { req =>
-    GameServiceImpl.startGameOrJoin(req.user).map(Ok(_))
+    startGameOrJoin(req.user).map(Ok(_))
     .recover{
       case er =>
         println(er.getMessage)
@@ -39,7 +39,7 @@ object GameController extends Controller with ServiceAuth {
   def submitRound = Authenticated.async(parse.json) { req =>
     req.request.body.validate[GameRound].map {
       case round: GameRound =>
-        GameServiceImpl.submitRound(round, req.user).map{
+        submitRound(round, req.user).map{
           _ => Ok(Json.obj("success" -> 1))
         } recover {
           case e => BadRequest(Json.obj("error" -> e.getMessage))
@@ -50,7 +50,7 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def getRoundData(id: Long) = Authenticated.async { authReq =>
-    GameServiceImpl.getRoundData(authReq.user, id)
+    getRoundData(authReq.user, id)
       .map(Ok(_)) recover { case cause => BadRequest(Json.obj("error" -> "wrong id"))}
   }
 
@@ -63,7 +63,7 @@ object GameController extends Controller with ServiceAuth {
   }
 
   def newStart = Authenticated.async{ req =>
-    GameServiceImpl.startGameOrJoin(req.user).map(Ok(_)) recover {
+    startGameOrJoin(req.user).map(Ok(_)) recover {
       case e => BadRequest(Json.obj("error" -> e.getMessage))
     }
   }

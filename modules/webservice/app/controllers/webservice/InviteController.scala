@@ -1,6 +1,6 @@
 package controllers.webservice
 
-import gameservice.{GameServiceImpl, GameService}
+import gameservice.GameServiceImpl
 import helpers.Push
 import models.webservice.GameDAO.Implicits._
 import models.webservice._
