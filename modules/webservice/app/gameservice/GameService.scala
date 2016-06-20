@@ -11,11 +11,11 @@ import scala.util.Try
  * Created by Murat.
  * Game Service Logic
  */
-object GameService {
+trait GameService {
 
   def startGame(user: GameUser) = GameDAO.newGame(user)
 
-  def getRoundData(user: GameUser, game: Game): Future[(Option[Long], Seq[GameCategory])] = {
+  def roundData(user: GameUser, game: Game): Future[(Option[Long], Seq[GameCategory])] = {
 
     val lastRound = RoundDAO.lastRound(game.id)
       lastRound.flatMap( round =>
@@ -32,7 +32,7 @@ object GameService {
       )
   }
 
-  def submitRound(gameRound: GameRound, user: GameUser) =
+  def submit(gameRound: GameRound, user: GameUser) =
     GameDAO.find(gameRound.gameId).map {
       _ foreach (RoundDAO.submitRound(gameRound, _, user.id))
     }

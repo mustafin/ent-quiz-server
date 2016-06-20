@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
 /**
  * Created by Murat.
  */
-object GameController extends Controller with ServiceAuth {
+object GameController extends Controller with ServiceAuth with GameService{
 
   lazy val games = TableQuery[GameTable]
   lazy val db = DatabaseConfigProvider.get[JdbcProfile](Play.current).db
@@ -31,8 +31,8 @@ object GameController extends Controller with ServiceAuth {
 
   def start = Authenticated.async { req =>
     for {
-      game <- GameService.startGame(req.user)
-      (rId, cat) <- GameService.getRoundData(req.user, game)
+      game <- startGame(req.user)
+      (rId, cat) <- roundData(req.user, game)
     } yield {
       Ok(Json.toJson(game.toGameData(req.user)).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(cat)))
     }
@@ -41,7 +41,7 @@ object GameController extends Controller with ServiceAuth {
   def submitRound = Authenticated(parse.json) { req =>
     req.request.body.validate[GameRound].map {
       case round: GameRound =>
-        GameService.submitRound(round, req.user)
+        submit(round, req.user)
         Ok(Json.obj("success" -> 1))
     }.recoverTotal(
       e => BadRequest(Json.obj("error" -> "wrong request body format"))
@@ -54,7 +54,7 @@ object GameController extends Controller with ServiceAuth {
     game.flatMap {
       case Some(g) =>
         val game = g.toGameData(authReq.user)
-        val data = GameService.getRoundData(authReq.user, g)
+        val data = roundData(authReq.user, g)
         data.map{ case (rId, d) =>
           Ok(Json.toJson(game).as[JsObject] + ("roundId" -> Json.toJson(rId)) + ("data" -> Json.toJson(d)))}
       case None =>

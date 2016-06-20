@@ -21,11 +21,11 @@ object Move{
 //  }
 }
 
-class MyMove(game: GameRound, user: GameUser) extends Move{
+class MyMove(game: GameRound, user: GameUser) extends Move with GameService{
 
   override def isReply: Boolean = false
 
-  override def submit(): Unit = GameService.submitRound(game, user)
+  override def submit(): Unit = submit(game, user)
 
   override def get(): JsValue = ???
 
@@ -33,11 +33,11 @@ class MyMove(game: GameRound, user: GameUser) extends Move{
 
 }
 
-class OpponentMove(game: GameRound, user: GameUser) extends Move{
+class OpponentMove(game: GameRound, user: GameUser) extends Move with GameService{
 
   override def isReply: Boolean = true
 
-  override def submit(): Unit = GameService.submitRound(game, user)
+  override def submit(): Unit = submit(game, user)
 
   override def get(): JsValue = ???
 

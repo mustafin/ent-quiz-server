@@ -26,3 +26,6 @@ libraryDependencies += specs2 % Test
 resolvers += "scalaz-bintray" at "https://dl.bintray.com/scalaz/releases"
 
 unmanagedResourceDirectories in Test <+=  baseDirectory ( _ /"target/web/public/test" )
+
+
+fork in run := true
